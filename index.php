@@ -180,14 +180,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ",
     
     "DROP TRIGGER IF EXISTS `trg_posts__insert`",
-    
     "CREATE TRIGGER `trg_posts__insert` AFTER INSERT ON `posts`
      FOR EACH ROW UPDATE table_data SET row_count = row_count + 1 WHERE name = 'posts'",
     
     "DROP TRIGGER IF EXISTS `trg_posts__delete`",
-    
-    "CREATE TRIGGER `trg_posts__delete` BEFORE DELETE ON `posts`
-     FOR EACH ROW UPDATE pools SET post_count = post_count - 1 WHERE id IN (SELECT pool_id FROM pools_posts WHERE post_id = OLD.id)",
+    "CREATE TRIGGER `trg_posts__delete` AFTER DELETE ON `posts`
+    FOR EACH ROW
+    BEGIN
+      UPDATE pools SET post_count = post_count - 1 WHERE id IN (SELECT pool_id FROM pools_posts WHERE post_id = OLD.id);
+      UPDATE table_data SET row_count = row_count - 1 WHERE name = 'posts';
+    END",
 
     "CREATE TABLE IF NOT EXISTS `posts_tags` (
       `post_id` int(11) NOT NULL,
@@ -198,12 +200,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
     
     "DROP TRIGGER IF EXISTS `trg_posts_tags__insert`",
-    
     "CREATE TRIGGER `trg_posts_tags__insert` BEFORE INSERT ON `posts_tags`
      FOR EACH ROW UPDATE tags SET post_count = post_count + 1 WHERE tags.id = NEW.tag_id",
     
     "DROP TRIGGER IF EXISTS `trg_posts_tags__delete`",
-    
     "CREATE TRIGGER `trg_posts_tags__delete` BEFORE DELETE ON `posts_tags`
      FOR EACH ROW UPDATE tags SET post_count = post_count - 1 WHERE tags.id = OLD.tag_id",
     
