@@ -1,0 +1,13 @@
+<?php
+set_actions(
+  'add_post',
+  'create',
+  'destroy',
+  'index',
+  'order',
+  'remove_post',
+  'select',
+  'show',
+  'update'
+);
+?>

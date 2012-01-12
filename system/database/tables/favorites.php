@@ -1,0 +1,1 @@
+<?php $columns = unserialize(stripslashes('a:4:{s:2:\"id\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:3:\"PRI\";}s:7:\"post_id\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:3:\"MUL\";}s:7:\"user_id\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:0:\"\";}s:10:\"created_at\";a:2:{s:4:\"type\";s:9:\"timestamp\";s:3:\"key\";s:0:\"\";}}')) ?>
