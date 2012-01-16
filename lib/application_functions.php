@@ -33,7 +33,7 @@ function respond_to_success($notice, $redirect_to_params, $options = array()) {
 }
 
 function notice($notice){
-  setcookie('notice', $notice, time() + 31556926, '/');
+  cookie_put('notice', $notice);
 }
 
 function respond_to_error($obj, $redirect_to_params, $options = array()) {
@@ -125,8 +125,8 @@ function init_cookies() {
   // Cookies::$list["country"] = $current_user_country;
   // vde(User::$current->is_anonymous);
   if(!User::$current->is_anonymous) {
-    Cookies::put("user_id", (string)User::$current->id);
-    Cookies::put("user_info", User::$current->user_info_cookie());
+    cookie_put("user_id", (string)User::$current->id);
+    cookie_put("user_info", User::$current->user_info_cookie());
     // Cookies::$list["has_mail"] = User::$current->has_mail() ? "1" : "0";
     // Cookies::$list["forum_updated"] = User::$current->is(">=30") && ForumPost::$_->updated(User::$current) ? "1" : "0";
     // Cookies::$list["comments_updated"] = User::$current->is(">=30") && Comment::$_->updated(User::$current) ? "1" : "0";
@@ -144,9 +144,9 @@ function init_cookies() {
     // } else
       // Cookies::$list["block_reason"] = "";
     
-    Cookies::put("resize_image", User::$current->always_resize_images ? "1" : "0");
+    cookie_put("resize_image", User::$current->always_resize_images ? "1" : "0");
     
-    Cookies::put('show_advanced_editing', User::$current->show_advanced_editing ? "1" : "0" );
+    cookie_put('show_advanced_editing', User::$current->show_advanced_editing ? "1" : "0" );
     
     // Cookies::$list["my_tags"] = User::$current->my_tags;
     
@@ -156,10 +156,10 @@ function init_cookies() {
     
     
     // ["blacklisted_tags"] = User::$current->blacklisted_tags_array;
-    Cookies::put("held_post_count", User::$current->held_post_count());
+    cookie_put("held_post_count", User::$current->held_post_count());
   } else {
-    Cookies::delete('user_info');
-    Cookies::delete('login');
+    cookie_remove('user_info');
+    cookie_remove('login');
     // Cookies::$list["blacklisted_tags"] = str_replace('%0D%0A', '&', urlencode(implode("\r\n", CONFIG::$default_blacklists)));
     // Cookies::rawput
     cookie_rawput('blacklisted_tags', str_replace('%0D%0A', '&', urlencode(implode("\r\n", CONFIG::$default_blacklists))));
@@ -182,7 +182,7 @@ function save_tags_to_cookie() {
   
   $tags = array_unique(array_filter($tags));
   
-  Cookies::put("recent_tags", implode(' ', array_slice($tags, 0, 20)));
+  cookie_put("recent_tags", implode(' ', array_slice($tags, 0, 20)));
 }
 
 function set_current_user() {

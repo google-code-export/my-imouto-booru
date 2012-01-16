@@ -3,18 +3,12 @@ class SYSCONFIG {
   # Only 'mysql' or 'pdo'.
   const database_driver = 'mysql';
   
-  /**
-   * Shows "Warnings" when an error occurs in a system function.
-   * Use only when under a development enviroment.
-   */
-  // const show_function_errors = true;
-  
   static $dbinfo = array(
     'host'    => "localhost",
     'user'    => "",
     'pw'      => "",
     'db'      => "myimouto",
-    'charset' => 'charset=UTF-8'
+    'charset' => ''
   );
   
   # If files were deployed in root, set to null.
@@ -27,9 +21,6 @@ class SYSCONFIG {
     'poolpost'
   );
   
-  # Database debug.
-  const show_detailed_errors = false;
-  
   /**
    * Parse routes with PHP
    *
@@ -38,6 +29,9 @@ class SYSCONFIG {
    * them to PHP.
    */
   const php_parses_routes = false;
+  
+  # Database debug.
+  const show_detailed_errors = false;
   
   /**
    * When json request, if an error occurs, it will be output in json.

@@ -3,7 +3,7 @@ include_model('ban', 'tag', 'user_blacklisted_tag');
 
 has_one('ban', array('foreign_key' => 'user_id'));
 has_one('user_blacklisted_tag');
-belongs_to('avatar_post', array('model_name' => "Post"));
+belongs_to('avatar_post', array('model_name' => "Post", 'foreign_key' => 'avatar_post_id'));
 
 before('validation', 'commit_secondary_languages');
 before('create', 'set_role');
@@ -50,24 +50,22 @@ class User extends ActiveRecord {
   }
   
   
-  function has_avatar() {
-    return $this->avatar_post_id ? true : false;
-  }
+
   
-  function avatar_post(&$user = null) {
-    if($user === null)
-      $user =& User::$current;
+  // function avatar_post(&$user = null) {
+    // if($user === null)
+      // $user = &User::$current;
     
-    return Post::$_->find($user->avatar_post_id);
-  }
+    // return Post::$_->find($user->avatar_post_id);
+  // }
   
-  function avatar_url() {
-    return "/data/avatars/".$this->id.".jpg";
-  }
+  // function avatar_url() {
+    // return "/data/avatars/".$this->id.".jpg";
+  // }
   
-  static function clear_avatars($post_id) {
-    DB::update("users SET avatar_post_id = NULL WHERE avatar_post_id = ?", $post_id);
-  }
+  // static function clear_avatars($post_id) {
+    // DB::update("users SET avatar_post_id = NULL WHERE avatar_post_id = ?", $post_id);
+  // }
   
   function authenticate($name, $pass) {
     return $this->authenticate_hash($name, md5($name.$pass));
@@ -100,12 +98,9 @@ class User extends ActiveRecord {
   }
   
   function save_cookies($user) {
-    Cookies::put('login', $user->name);
-    Cookies::put('pass_hash', $user->password_hash);
+    cookie_put('login', $user->name);
+    cookie_put('pass_hash', $user->password_hash);
     $_SESSION[CONFIG::app_name]['user_id'] = $user->id;
-    // Cookies::$list['login'] = {:value => user.name, :expires => 1.year.from_now}
-    // Cookies::$list['pass_hash'] = {:value => user.password_hash, :expires => 1.year.from_now}
-    // session['user_id'] = user.id
   }
   
   function secondary_language_array() {
@@ -360,6 +355,104 @@ class User extends ActiveRecord {
     $pass .= rand(0, 100);
     DB::update("users SET password_hash = ? WHERE id = ?", md5($pass), $this->id);
     return $pass;
+  }
+  
+  /* } Avatar methods { */
+
+  static function clear_avatars($post_id) {
+    return DB::update("users SET avatar_post_id = NULL WHERE avatar_post_id = ?", $post_id);
+  }
+
+  function avatar_url() {
+    return CONFIG::url_base . "/data/avatars/{$this->id}.jpg";
+  }
+
+  function has_avatar() {
+    return !empty($this->avatar_post_id);
+  }
+
+  function avatar_path() {
+    return ROOT . "public/data/avatars/" . $this->id . ".jpg";
+  }
+  
+  function set_avatar($params) {
+    $post = Post::$_->find($params['post_id']);
+    if (!$post->can_be_seen_by($this)) {
+      $this->record_errors->add('access', "denied");
+      return false;
+    }
+    
+    // vde($params);
+    
+    if ($params['top'] < 0 or $params['top'] > 1 or
+      $params['bottom'] < 0 or $params['bottom'] > 1 or
+      $params['left'] < 0 or $params['left'] > 1 or
+      $params['right'] < 0 or $params['right'] > 1 or
+      $params['top'] >= $params['bottom'] or
+      $params['left'] >= $params['right'])
+    {
+      $this->record_errors->add('parameter', "error");
+      return false;
+    }
+
+    $tempfile_path = ROOT . "public/data/" . $this->id . ".avatar.jpg";
+    
+    $use_sample = $post->has_sample();
+    if ($use_sample) {
+      $image_path = $post->sample_path();
+      $image_ext = "jpg";
+      $size = $this->reduce_and_crop($post->sample_width, $post->sample_height, $params);
+
+      # If we're cropping from a very small region in the sample, use the full
+      # image instead, to get a higher quality image.
+      if (($size['crop_bottom'] - $size['crop_top'] < CONFIG::avatar_max_height) or
+        ($size['crop_right'] - $size['crop_left'] < CONFIG::avatar_max_width))
+        $use_sample = false;
+    }
+
+    if (!$use_sample) {
+      $image_path = $post->file_path();
+      $image_ext = $post->file_ext;
+      $size = $this->reduce_and_crop($post->width, $post->height, $params);
+    }
+    
+    try {
+      Danbooru::resize($image_ext, $image_path, $tempfile_path, $size, 95);
+    } catch (Exception $x) {
+      if (file_exists($tempfile_path))
+        unlink($tempfile_path);
+
+      $this->record_errors->add("avatar", "couldn't be generated (" . $x->getMessage() . ")");
+      return false;
+    }
+    
+    rename($tempfile_path, $this->avatar_path());
+    chmod($this->avatar_path(), 0775);
+    
+    $this->update_attributes(array(
+      'avatar_post_id' => $params['post_id'],
+      'avatar_top' => $params['top'],
+      'avatar_bottom' => $params['bottom'],
+      'avatar_left' => $params['left'],
+      'avatar_right' => $params['right'],
+      'avatar_width' => $size['width'],
+      'avatar_height' => $size['height'],
+      'avatar_timestamp' => gmd()
+    ));
+    
+    return true;
+  }
+  
+  function reduce_and_crop($image_width, $image_height, $params) {
+    $cropped_image_width = $image_width * ($params['right'] - $params['left']);
+    $cropped_image_height = $image_height * ($params['bottom'] - $params['top']);
+
+    $size = Danbooru::reduce_to(array('width' => $cropped_image_width, 'height' => $cropped_image_height), array('width' => CONFIG::avatar_max_width, 'height' => CONFIG::avatar_max_height), 1, true);
+    $size['crop_top'] = $image_height * $params['top'];
+    $size['crop_bottom'] = $image_height * $params['bottom'];
+    $size['crop_left'] = $image_width * $params['left'];
+    $size['crop_right'] = $image_width * $params['right'];
+    return $size;
   }
 }
 ?>

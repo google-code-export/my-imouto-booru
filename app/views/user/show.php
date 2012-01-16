@@ -5,7 +5,7 @@
     </div>
     <div style="position: absolute; bottom: 0; margin-bottom: 15px; left: <?php echo $user->avatar_width+5 ?>px; ">
       <?php if (User::$current->has_permission($user)) : ?>
-        &nbsp;<?php echo link_to("(edit)", array('#set_avavatar', 'id' => $user->avatar_post->id, 'user_id' => $user->id)) ?>
+        &nbsp;<?php echo link_to("(edit)", array('#set_avatar', 'id' => $user->avatar_post->id, 'user_id' => $user->id)) ?>
       <?php endif ?>
       <h2><?php echo h($user->pretty_name()) ?></h2>
     </div>

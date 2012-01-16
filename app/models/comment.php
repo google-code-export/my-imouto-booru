@@ -39,7 +39,6 @@ class Comment extends ActiveRecord {
   function update_last_commented_at() {
     # return if self.do_not_bump_post
     
-    DB::show_query(1);
     $comment_count = DB::select_value("SELECT COUNT(*) FROM comments WHERE post_id = ?", $this->post_id);
     if ($comment_count <= CONFIG::comment_threshold) {
       DB::update("posts SET last_commented_at = (SELECT created_at FROM comments WHERE post_id = :post_id ORDER BY created_at DESC LIMIT 1) WHERE posts.id = :post_id", array('post_id' => $this->post_id));

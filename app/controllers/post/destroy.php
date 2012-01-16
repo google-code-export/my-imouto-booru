@@ -1,5 +1,4 @@
 <?php
-DB::show_query(1);
 if (Request::$params->commit == "Cancel")
   redirect_to('#show', array('id' => Request::$params->id));
 

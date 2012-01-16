@@ -391,14 +391,7 @@ class ActiveRecord {
         
         foreach ($model_validations as $prop => $opts) {
           check_array($opts);
-          
-          if ($data->$model_property === null) {
-            if (empty($opts['accept_null'])) {
-              return false;
-            } else
-              unset($opts['accept_null']);
-          }
-          
+
           # Check action
           if (isset($opts['on'])) {
             if ($action != $opts['on'])
@@ -417,6 +410,20 @@ class ActiveRecord {
             }
             unset($opts['if']);
           }
+          
+          if ($data->$model_property === null) {
+            if (empty($opts['accept_null'])) {
+              # Some validations, like confirmation, should only activate if the model property is present.
+              # So we're skipping it here.
+              if ($prop == 'confirmation')
+                continue;
+              return false;
+            }
+             
+            unset($opts['accept_null']);
+            continue;
+          }
+          
           // # Check message
           // if (isset($opts['message'])) {
             // $message = $opts['message'];
@@ -434,6 +441,9 @@ class ActiveRecord {
           
             case 'confirmation':
               $prop_confirm = $model_property . '_confirmation';
+              
+              if ($this->$prop_confirm === null)
+                continue;
               
               !isset($opts['message']) && $opts['message'] = 'doesn\'t match confirmation.';
               
@@ -763,12 +773,6 @@ class ActiveRecord {
    * to this array, otherwise, according to its properties.
    */
   final function save($values = array()) {
-    
-    // try {
-      // $this->validate_data(null, 'save');
-    // } catch (ActiveRecordException $e) {
-      // return false;
-    // }
     if (!$this->validate_data(null, 'save'))
       return false;
     
@@ -900,14 +904,12 @@ class ActiveRecord {
    */
   function update_attributes($attrs) {
     if (!is_array($attrs))
-      return;
+      return false;
     
     $this->add_attributes($attrs);
     
     $this->run_callbacks('before_update');
-    // $r = $this->save();
     
-    // vde($r);
     if (!$this->save())
       return false;
     

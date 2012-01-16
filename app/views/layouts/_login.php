@@ -26,23 +26,23 @@
             <table class="form" style="width: 80%; max-width: 30em; margin-bottom: .5em; margin-left: auto; margin-right: auto;">
               <tr>
                 <th style="width: 8em"><label class="block" for="login-popup-username">Name</label></th>
-                <td style="width: 10em" align=left><input id="login-popup-username" name="username" type="text" style="width: 100%;"></td>
+                <td style="width: 10em" align="left"><input id="login-popup-username" name="username" type="text" style="width: 100%;"></td>
               </tr>
               <tr id="login-popup-email-box">
                 <th><label class="block" for="login-popup-email">Email</label></th>
-                <td align=left><input id="login-popup-email" name="email" type="text" style="width: 100%;"></td>
+                <td align="left"><input id="login-popup-email" name="email" type="text" style="width: 100%;"></td>
               </tr>
               <tr id="login-popup-password-box">
                 <th><label class="block" for="login-popup-password">Password</label></th>
-                <td align=left><input id="login-popup-password" name="password" type="password" style="width: 100%;"></td>
+                <td align="left"><input id="login-popup-password" name="password" type="password" style="width: 100%;"></td>
               </tr>
               <tr id="login-popup-password-confirm-box" style="display: none;">
                 <th><label class="block" for="login-popup-password-confirm">Confirm Password</label></th>
-                <td align=left><input id="login-popup-password-confirm" name="password-confirm" type="password" style="width: 100%;"></td>
+                <td align="left"><input id="login-popup-password-confirm" name="password-confirm" type="password" style="width: 100%;"></td>
               </tr>
               <tr>
                 <th style="background: none;"></th>
-                <td align=left>
+                <td align="left">
                 </td>
               </tr>
             </table>

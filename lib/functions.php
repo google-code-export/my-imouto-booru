@@ -2,16 +2,16 @@
 include ROOT . 'lib/application_functions.php';
 include ROOT . 'lib/dtext.php';
 
-function cookie_rawput($name, $value){
-  setrawcookie($name, $value, time() + 31556926, '/');
+function cookie_put($name, $value = '', $secure = false, $http_only = false) {
+  setcookie($name, utf8_encode($value), time() + 31556926, '/');//, CONFIG::server_host, $secure, $http_only);
 }
 
-function cookie_put($name, $value){
-  setcookie($name, $value, time() + 31556926, '/');
+function cookie_rawput($name, $value = '', $secure = false, $http_only = false) {
+  setrawcookie($name, utf8_encode($value), time() + 31556926, '/');//, CONFIG::server_host, $secure, $http_only);
 }
 
-function cookie_remove($name){
-  setcookie($name, '', time() - 31556926, '/');
+function cookie_remove($name) {
+  setcookie($name, '', time() - 31556926, '/');//, CONFIG::server_host);
 }
 
 /**

@@ -2,6 +2,13 @@
 RewriteEngine On
 RewriteBase /
 
+# If MyImouto is in a folder and user tries to access the site
+# through the folder name, redirect them to site with port.
+# In case the system was deployed in the root, these lines should be deleted
+RewriteCond %{THE_REQUEST} ^[A-Z]+\ ([^\s]+)\ .*
+RewriteCond %1 ^\/myimouto
+RewriteRule (.*) http://127.0.0.1:3000 [R=301,L]
+
 RewriteRule ^sysadmin/ system/admin/_initializer.php [L]
 
 RewriteRule ^data/(jpeg|sample|image)/([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{28})/.*(\.[\w]+)$  public/data/$1/$2/$3/$2$3$4$5 [L]

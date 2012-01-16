@@ -16,7 +16,8 @@ Request::$params->post = array_merge(Request::$params->post, array(
   'ip_addr'         => Request::$remote_ip,
   'status'          => $status,
   'tempfile_path'   => $_FILES['post']['tmp_name']['file'],
-  'tempfile_name'   => pathinfo($_FILES['post']['name']['file'], PATHINFO_FILENAME)
+  'tempfile_name'   => $_FILES['post']['name']['file'],
+  'is_upload'       => true
 ));
 
 $post = Post::$_->create(Request::$params->post);

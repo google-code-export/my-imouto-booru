@@ -65,9 +65,10 @@ class Danbooru {
       // while true
         # If :crop is set, crop between [crop_top,crop_bottom) and [crop_left,crop_right)
         # before resizing.
-        self::resize_image($file_ext, $read_path, $write_path, $output_size['width'], $output_size['height'],
-                              $output_size['crop_top'], $output_size['crop_bottom'], $output_size['crop_left'], $output_size['crop_right'],
-                              $quality);
+    if (!self::resize_image($file_ext, $read_path, $write_path, $output_size['width'], $output_size['height'],
+        $output_size['crop_top'], $output_size['crop_bottom'], $output_size['crop_left'], $output_size['crop_right'],
+        $quality))
+      throw new Exception('Wrong file extension');
 
         # If the file is small enough, or if we're at the lowest allowed quality setting
         # already, finish.
@@ -102,15 +103,20 @@ class Danbooru {
     
     switch($file_ext){
       case 'jpg':
-        $source = imagecreatefromjpeg($read_path);
+        $source = @imagecreatefromjpeg($read_path);
         break;
       case 'png':
-        $source = imagecreatefrompng($read_path);
+        $source = @imagecreatefrompng($read_path);
         break;
     }
     
+    if (is_bool($source))
+      return false;
+    
     imagecopyresampled($sample, $source, 0, 0, $crop_left, $crop_top, $output_width, $output_height, $crop_width, $crop_height);
     imagejpeg($sample, $write_path, $output_quality);
+    
+    return true;
   }
 }
 ?>

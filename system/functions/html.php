@@ -136,7 +136,7 @@ function tag_has_value($val) {
 }
 
 function image_tag($src, $attrs = array()) {
-  return HTMLTags::create('img', array('src' => $src, $attrs));
+  return HTMLTags::create('img', array_merge(array('src' => $src), $attrs));
 }
 
 class HTMLTags {

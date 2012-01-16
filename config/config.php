@@ -4,10 +4,10 @@ class CONFIG {
    * Site information and options.
    */
   
-  const server_host = 'my.imouto.org';
+  const server_host = 'localhost:3000';
   
   # Base URL with no trailing slash.
-  const url_base = 'http://my.imouto.org:3000';
+  const url_base = 'http://localhost:3000';
   
   # Name for your site and default page title.
   const app_name = 'my.imouto';
@@ -29,7 +29,7 @@ class CONFIG {
   const tag_query_limit = 6;
   const vote_record_min = 0;
   const vote_record_max = 3;
-  const local_image_service = "my.imouto.org";
+  const local_image_service = "localhost";
   const min_mpixels = null;
   const max_pending_images = null;
   const dupe_check_on_upload = false;
@@ -69,6 +69,9 @@ class CONFIG {
   
   const member_comment_limit = 20;
   const enable_signups = true;
+  
+  const avatar_max_width = 125;
+  const avatar_max_height = 125;
   
   static function can_see_post($user, $post) {
     # By default, no posts are hidden.
@@ -177,10 +180,10 @@ class CONFIG {
   const mime_type_error = 'Only JPEG and PNG images are allowed.';
   
   # Default rating for upload (e, q or s).
-  const default_rating_upload = 's';
+  const default_rating_upload = 'q';
   
   # Default rating for import (e, q or s).
-  const default_rating_import = 's';
+  const default_rating_import = 'q';
   
   # Note: These next 2 options may need a lot of memory.
   # Create a JPEG version of PNG files.
@@ -214,4 +217,6 @@ class CONFIG {
   const max_tagsubs = 5;
   
 }
+# Do not edit this:
+# Revision: 0.0.1 1
 ?>

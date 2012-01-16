@@ -354,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     DB::execute_sql($query);
 
   extract($_POST);
-  $password_hash = md5($name, $password);
+  $password_hash = md5($name.$password);
 
   $user_id = DB::insert('users (created_at, name, password_hash, level, show_advanced_editing) VALUES (?, ?, ?, ?, ?)', gmd(), $name, $password_hash, 50, 1);
   DB::insert('user_blacklisted_tags VALUES (?, ?)', $user_id, implode("\r\n", CONFIG::$default_blacklists));
@@ -368,8 +368,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   unlink('index.php');
   rename('index_.php', 'index.php');
   
-  setcookie('login', $name, time()+(60*60*24*365), '/');
-  setcookie('pass_hash', $password_hash, time()+(60*60*24*365), '/');
+  cookie_put('login', $name);
+  cookie_put('pass_hash', $password_hash);
   
   notice('Installation completed');
   header('Location: /');
@@ -379,11 +379,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 if (function_exists('finfo_open')) {
   $finfo =  "Enabled";
   $finfo_class = "good";
-  $finfo_notice = '';
 } else {
   $finfo =  "Not enabled";
   $finfo_class = "bad";
-  $finfo_notice = '<p class="center_box" style="margin-top:-15px;font-weight:700;"><a href="#">Enable php_fileinfo.dll library in php.ini and restart your server.</a></p>';
+}
+
+if (class_exists('PDO')) {
+  $pdo =  "Enabled";
+  $pdo_class = "good";
+} else {
+  $pdo =  "Not enabled";
+  $pdo_class = "bad";
 }
 ?>
 
@@ -455,11 +461,16 @@ if (function_exists('finfo_open')) {
       <tr>
         <th>extension=php_fileinfo.dll</th>
         <td class="<?php echo $finfo_class ?>" id="finfo_info"><?php echo $finfo ?></td>
-        <td>Must be enabled</td>
+        <td>Recommended</td>
+      </tr>
+      
+      <tr>
+        <th>extension=php_pdo_mysql.dll</th>
+        <td class="<?php echo $pdo_class ?>" id="finfo_info"><?php echo $pdo ?></td>
+        <td>Recommended</td>
       </tr>
     
     </table>
-	<?php echo $finfo_notice ?>
     
     <br />
     <br />
@@ -489,14 +500,7 @@ if (function_exists('finfo_open')) {
   </div>
   
   <script type="text/javascript">
-    var finfo = $('finfo_info').innerHTML;
-    
     function install(){
-      if ( finfo != 'Enabled' ){
-        notice("FileInfo library must be enabled");
-        return false;
-      }
-   
       var pw = $('pw').value;
       var pwc = $('pwc').value;
       var name = $('name').value;

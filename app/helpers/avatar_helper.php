@@ -1,7 +1,8 @@
 <?php
 function avatar($user, $id, $html_options = array()) {
   // $shown_avatars = array();
-  $avatar = $user->avatar_post($user);
+  // $avatar = $user->avatar_post($user);
+  $avatar = $user->avatar_post;
   
   return '<a href="/post/show/'.$avatar->id.'" class="ca'.$avatar->id.'" onclick="return Post.check_avatar_blacklist('.$avatar->id.', '.$id.');">
   <img alt="'.$user->id.'" class="avatar" width="'.$user->avatar_width.'" height="'.$user->avatar_height.'" src="'.$user->avatar_url().'" />

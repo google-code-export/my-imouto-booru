@@ -32,7 +32,7 @@ if (Request::$post) {
     'user_id'         => User::$current->id,
     'status'          => 'active',
     'tempfile_path'   => $filepath,
-    'tempfile_name'   => pathinfo(Request::$params->post['filename'], PATHINFO_FILENAME)
+    'tempfile_name'   => Request::$params->post['filename']
   ));
   
   $post = Post::$_->create(Request::$params->post);

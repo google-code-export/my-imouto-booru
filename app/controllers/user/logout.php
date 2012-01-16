@@ -1,8 +1,8 @@
 <?php
 set_title('Logout');
 
-Cookies::delete('login');
-Cookies::delete('pass_hash');
+cookie_remove('login');
+cookie_remove('pass_hash');
 $_SESSION = array();
 session_destroy();
 

@@ -461,7 +461,6 @@ class Post extends ActiveRecord {
   }
   
   function ensure_tempfile_exists() {
-    // is_uploaded_file(realpath($this->tempfile_path)
     if (empty($_FILES['post']['name']['file']) || $_FILES['post']['error']['file'] === UPLOAD_ERR_OK)
       return;
     
@@ -474,10 +473,19 @@ class Post extends ActiveRecord {
       $this->record_errors->add_to_base("No file received");
       return false;
     }
-  
-  
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $this->mime_type = $finfo->file($this->tempfile_path);
+    
+    $this->tempfile_ext = pathinfo($this->tempfile_name, PATHINFO_EXTENSION);
+    $this->tempfile_name = pathinfo($this->tempfile_name, PATHINFO_FILENAME);
+    
+    if (class_exists('finfo')) {
+      $finfo = new finfo(FILEINFO_MIME_TYPE);
+      $this->mime_type = $finfo->file($this->tempfile_path);
+    } else {
+      $this->tempfile_ext == 'jpeg' && $this->tempfile_ext = 'jpg';
+      $this->mime_type = array_search($this->tempfile_ext, CONFIG::$allowed_mime_types);
+    }
+    
+    is_bool($this->mime_type) && $this->mime_type = 'Unkown mime-type';
   }
   
   function validate_content_type() {
@@ -885,29 +893,29 @@ class Post extends ActiveRecord {
     else
       rename($this->tempfile_path, $this->file_path());
     
-    chmod($this->file_path(), 0664);
+    chmod($this->file_path(), 0777);
 
     if ($this->is_image()) {
       $this->create_dirs($this->preview_path());
       rename($this->tempfile_preview_path(), $this->preview_path());
-      chmod($this->preview_path(), 0664);
+      chmod($this->preview_path(), 0777);
     }
 
     if (file_exists($this->tempfile_sample_path())) {
       $this->create_dirs($this->sample_path());
       rename($this->tempfile_sample_path(), $this->sample_path());
-      chmod($this->sample_path(), 0664);
+      chmod($this->sample_path(), 0777);
     }
 
     if (file_exists($this->tempfile_jpeg_path())) {
       $this->create_dirs($this->jpeg_path());
       rename($this->tempfile_jpeg_path(), $this->jpeg_path());
-      chmod($this->jpeg_path(), 0664);
+      chmod($this->jpeg_path(), 0777);
     }
   }
   
   private function create_dirs($dir) {
-    @mkdir(pathinfo($dir, PATHINFO_DIRNAME), 0664, true);
+    @mkdir(pathinfo($dir, PATHINFO_DIRNAME), 0777, true);
   }
     
   /** }
@@ -1227,7 +1235,7 @@ class Post extends ActiveRecord {
       return;
     
     $parent = new Post('find', $this->parent_id);
-    // new Collection('PostVotes', 'find', 'all', array('conditions' => array('post_id = ?', $this->id)))
+    
     foreach (PostVotes::$_->collection('find', array('conditions' => array('post_id = ?', $this->id))) as $vote) {
       $parent->vote($vote->score, $vote->user);
       $this->vote(0, $vote->user);

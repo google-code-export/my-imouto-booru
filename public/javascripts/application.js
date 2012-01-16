@@ -24230,7 +24230,6 @@ User = {
       parameters: parameters,
 
       onComplete: function(resp) {
-        alert(resp.responseText);
         var resp = resp.responseJSON;
         func(resp);
       },
