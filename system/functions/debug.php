@@ -46,7 +46,7 @@ function vdob(&$v, $replace_n = false) {
 }
 
 function memusage() {
-  echo 'Memory usage: '.bytes_to_human(memory_get_usage());
+  echo 'Memory usage: '.number_to_human_size(memory_get_usage());
 }
 
 # Experimental?

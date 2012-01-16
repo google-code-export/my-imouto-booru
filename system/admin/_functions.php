@@ -37,7 +37,7 @@ function to_index($notice = null) {
   exit;
 }
 
-function read_files($dir) {
+function read_dir($dir) {
   $d = dir($dir);
 
   while (false !== ($f = $d->read())) {

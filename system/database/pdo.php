@@ -83,6 +83,9 @@ class DB {
   private static function drop_error($src, $on_state) {
     self::$error = true;
     
+    if (!SYSCONFIG::system_error_reporting)
+      return;
+    
     if (self::$detailed_errors) {
       $err = debug_backtrace();
       $at = null;
@@ -128,8 +131,11 @@ class DB {
     $sql = array_shift($params);
     
     # Workaround for queries with named placeholders
-    if (is_int(strpos($sql, ':')) && !is_int(key($params[0])))
+    if (self::has_named_placeholders($sql) && !is_int(key($params[0])))
       $params = array_shift($params);
+    
+    if (!$params)
+      $params = array();
     
     return array($sql, $params);
   }
@@ -174,6 +180,31 @@ class DB {
     return self::$PDO->quote($str);
   }
   
+  private static function has_named_placeholders($sql) {
+    # Avoiding to use preg_match as much as possible.
+    if (is_int(strpos($sql, ':'))) {
+      $has_named_placeholders = false;
+      
+      $substr = substr($sql, strpos($sql, ':'));
+      $strlen = strlen($substr);
+      while ($strlen) {
+        if (ctype_alpha(substr($substr, strpos($substr, ':') + 1, 1))) {
+          $has_named_placeholders = true;
+          break;
+
+        } else {
+          $substr = substr($substr, strpos($substr, ':') + 1);
+          if (is_bool(strpos($substr, ':')))
+            break;
+          $strlen = strlen($substr);
+        }
+      }
+    } else
+      $has_named_placeholders = false;
+    
+    return $has_named_placeholders;
+  }
+  
   static function bind_params($sql, $params) {
     if (!$params)
       return $sql;
@@ -183,8 +214,7 @@ class DB {
     if (is_int(strpos($sql, '?')))
       $marker_question = true;
     
-    if (is_int(strpos($sql, ':')))
-      $marker_name = true;
+    $marker_name = self::has_named_placeholders($sql);
     
     if ($marker_question && $marker_name)
       self::drop_error('<strong>DB::bind_params:</strong> Only one type of markers is allowed.', 'prepare');

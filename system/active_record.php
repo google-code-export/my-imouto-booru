@@ -294,7 +294,7 @@ class ActiveRecord {
    */
   function exists($query, $params = null) {
     if (is_int($query))
-      $where = ' id = '.$query;
+      $where = ' ' . $this->t() . '.id = '.$query;
     else
       $where = $this->sanitize_sql($query, $params);
     
@@ -580,8 +580,6 @@ class ActiveRecord {
     foreach ($this as $d => $v) {
       if (!$this->column_exists($d))
         continue;
-      // elseif ($v === null)
-        // $v = 'null';
       
       $values_names[] = $d;
       $values[] = $v;
@@ -646,14 +644,14 @@ class ActiveRecord {
       check_array($keys);
       // $keys = array_combine(array_fill(0, count($ids), 'id'), $ids);
       
-      $w = ' `id` IN (??) ';
+      $w = ' '.$this->t().'.`id` IN (??) ';
       
     } else {
       if (!$keys = $this->get_model_keydata())
         return false;
       
       foreach (array_keys($keys) as $k)
-        $w[] = "`$k` = ?";
+        $w[] = $this->t().".`$k` = ?";
       
       $w = implode(' AND ', $w);
     }
@@ -974,7 +972,7 @@ class ActiveRecord {
     return $r;
   }
   
-  private function create_sql($params) {
+  function create_sql($params) {
     $binding_data = array();
     $calc_rows = null;
     
@@ -1041,67 +1039,84 @@ class ActiveRecord {
     return isset($result[0]['COUNT(*)']) ? $result[0]['COUNT(*)'] : false;
   }
   
-  function find($params) {
+  protected function parse_find_params(&$select_type, &$params = array()) {
     $select_types = array('first', 'last', 'all');
     
-    if (is_string($params) && in_array($params, $select_types)) {
-      $params = func_get_args();
-      
-      $select = array_shift($params);
-      
+    if (is_string($select_type) && in_array($select_type, $select_types)) {
       if (!$params)
         return false;
-      $params = array_shift($params);
-    } else
-      $select = 'first';
+      
+      $find_params['select_type'] = $select_type;
+      
+    } else {
+      $params = $select_type;
+      $find_params['select_type'] = 'first';
+    }
     
     if (!is_array($params) && (is_int($params) || ctype_digit($params))) {
       # single ID.
-      $params = array('conditions' => array('id = ?', $params));
+      $params = array('conditions' => array($this->t() . '.id = ?', $params));
       
     } elseif (is_array($params) && is_indexed_arr($params)) {
       # array of IDs.
-      $params = array('conditions' => array('id IN (??)', $params));
+      $params = array('conditions' => array($this->t() . '.id IN (??)', $params));
     }
     
-    if (isset($params['return_array'])) {
-      $return_array = true;
+    if (!empty($params['return_array'])) {
+      $find_params['return_array'] = true;
       unset($params['return_array']);
     } else
-      $return_array = false;
+      $find_params['return_array'] = false;
     
-    if (isset($params['return_value'])) {
-      $return_value = $params['return_value'];
-      $return_array = true;
+    if (!empty($params['return_value'])) {
+      $find_params['return_value'] = $params['return_value'];
+      $find_params['return_array'] = true;
       unset($params['return_value']);
     } else
-      $return_value = false;
+      $find_params['return_value'] = false;
     
     # for collection
     if (isset($params['model_name'])) {
-      $model_name = $params['model_name'];
+      $find_params['model_name'] = $params['model_name'];
       unset($params['model_name']);
     } else
-      $model_name = get_class($this);
+      $find_params['model_name'] = get_class($this);
     
-    if ($select == 'all' && isset($params['select'])) {
-      $return_array = true;
+    if ($find_params['select_type'] == 'all' && isset($params['select'])) {
+      $find_params['return_array'] = true;
     }
     
     if (!empty($params['return'])) {
       switch ($params['return']) {
         case 'model':
-          $return_array = false;
+          $find_params['return_array'] = false;
         break;
       }
       unset($params['return']);
     }
     
+    return $find_params;
+  }
+  
+  function find($select, $params = array()) {
+    $find_params = $this->parse_find_params($select, $params);
+    
     $sql = $this->create_sql($params);
     
-    $data = call_user_func_array('DB::execute_sql', $sql);
+    $data = $this->execute_find_sql($sql);
     
+    return $this->retrieve_find_result($data, $find_params);
+  }
+  
+  protected function execute_find_sql($sql) {
+    $data = call_user_func_array('DB::execute_sql', $sql);
     $this->calc_rows();
+    
+    return $data;
+  }
+  
+  protected function retrieve_find_result($data, $find_params) {
+    extract($find_params);
     
     if (empty($data)) {
       if ($return_value)
@@ -1110,17 +1125,17 @@ class ActiveRecord {
         return array();
     }
     
-    if ($select == 'first') {
+    if ($select_type == 'first') {
       if (isset($data[0]))
         $data = $data[0];
       else
         return false;
-    } elseif ($select == 'last') {
+    } elseif ($select_type == 'last') {
       $data = end($data);
     }
     
     if ($return_array) {
-      if ($select == 'first' || $select == 'last') {
+      if ($select_type == 'first' || $select_type == 'last') {
         if ($return_value) {
           if (isset($data[$return_value]))
             return $data[$return_value];
@@ -1131,7 +1146,7 @@ class ActiveRecord {
       
       return $data;
     } else {
-      if ($select == 'all') {
+      if ($select_type == 'all') {
         $return = new Collection($data, array('model_name' => $model_name));
       } else {
         $return = new $model_name($data);
@@ -1306,6 +1321,24 @@ class Collection extends ActiveRecord {
     }
     
     return $objs;
+  }
+  
+  function to_xml() {
+    if (empty($this->{0}))
+      return;
+    
+    $xml = '<' . strtolower($this->{0}->t()) . '>';
+    
+    foreach ($this as $obj) {
+      if (method_exists($obj, 'to_xml'))
+        $xml .= $obj->to_xml();
+      else
+        $xml .= to_xml($obj, null, array('skip_instruct' => true));
+    }
+    
+    $xml .= '</' . strtolower($this->{0}->t()) . '>';
+    
+    return $xml;
   }
 }
 ?>

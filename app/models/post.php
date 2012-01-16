@@ -30,6 +30,18 @@ class Post extends ActiveRecord {
     $prefix = !CONFIG::download_filename_prefix ? null : CONFIG::download_filename_prefix.' ';
     $abmd5 = substr($this->md5, 0, 2);
     
+    if ($this->id) {
+      $row = DB::select_row("u.name AS author, GROUP_CONCAT(CONCAT(t.name,':',t.tag_type) SEPARATOR ' ') AS cached_tags
+        FROM posts p
+        JOIN posts_tags pt ON p.id = pt.post_id
+        JOIN tags t ON pt.tag_id = t.id
+        JOIN users u ON p.user_id = u.id
+        WHERE pt.post_id = " . $this->id);
+      
+      $this->cached_tags = $row['cached_tags'];
+      $this->author = $row['author'];
+    }
+    
     $this->parsed_cached_tags = $this->parse_cached_tags();
     
     $this->tags = $this->tag_names();
@@ -54,64 +66,55 @@ class Post extends ActiveRecord {
         $this->$n = (int)$p;
     }
     
-    $this->create_api_attributes();
-
-    
-    // if (CONFIG::fake_sample_url && Request::$controller == 'post' && Request::$action == 'browse') {
-    // if ($this->fake_samples_for_browse()) {
     # For /post/browse
     !$this->sample_width && $this->sample_width = $this->width;
     !$this->sample_height && $this->sample_height = $this->height;
     !$this->jpeg_width && $this->jpeg_width = $this->width;
     !$this->jpeg_height && $this->jpeg_height = $this->height;
-    // }
   }
   
-  private function create_api_attributes() {
-    $this->api_attributes = array('id', 'tags', 'created_at', 'creator_id', 'author', 'change', 'source', 'score', 'md5', 'file_size', 'file_url', 'is_shown_in_index', 'preview_url', 'preview_width', 'preview_height', 'actual_preview_width', 'actual_preview_height', 'sample_url', 'sample_width', 'sample_height', 'sample_file_size', 'jpeg_url', 'jpeg_width', 'jpeg_height', 'jpeg_file_size', 'rating', 'has_children', 'parent_id', 'status', 'width', 'height', 'is_held', 'frames_pending_string', 'frames_string');
+  function api_attributes() {
+    $api_attributes = array('id', 'tags', 'created_at', 'creator_id', 'author', 'change', 'source', 'score', 'md5', 'file_size', 'file_url', 'is_shown_in_index', 'preview_url', 'preview_width', 'preview_height', 'actual_preview_width', 'actual_preview_height', 'sample_url', 'sample_width', 'sample_height', 'sample_file_size', 'jpeg_url', 'jpeg_width', 'jpeg_height', 'jpeg_file_size', 'rating', 'has_children', 'parent_id', 'status', 'width', 'height', 'is_held', 'frames_pending_string', 'frames_string');
     
-    $aa = &$this->api_attributes;
+    $api_attributes = array_fill_keys($api_attributes, '');
     
-    $aa = array_fill_keys($this->api_attributes, '');
-    $aa['frames_pending'] = $this->api_attributes['frames'] = array();
-    
-    # ´change_seq´ still not created in database.
-    $aa['change'] = 0;
+    # Creating these manually because they're not implemented yet.
+    $api_attributes['frames_pending'] = $api_attributes['frames'] = array();
+    # Column ´change_seq´ still not created in database.
+    $api_attributes['change'] = 0;
     
     foreach (array_keys(get_object_vars($this)) as $name) {
       if ($name == 'user_id')
-        $aa['creator_id'] = &$this->$name;
+        $api_attributes['creator_id'] = $this->$name;
       elseif ($name == 'sample_size')
-        $aa['sample_file_size'] = &$this->$name;
+        $api_attributes['sample_file_size'] = $this->$name;
       elseif ($name == 'jpeg_size')
-        $aa['jpeg_file_size'] = &$this->$name;
+        $api_attributes['jpeg_file_size'] = $this->$name;
       elseif ($name == 'cached_tags')
-        $aa['tags'] = &$this->tags;
+        $api_attributes['tags'] = $this->tags;
       elseif ($name == 'created_at') {
-        $date = new DateTime($this->created_at);
-        $aa[$name] = $date->getTimestamp();
-        unset($date);
-      } elseif (array_key_exists($name, $aa))
-        $aa[$name] = &$this->$name;
+        $api_attributes['created_at'] = datetime_to_timestamp($this->created_at);
+      } elseif (array_key_exists($name, $api_attributes))
+        $api_attributes[$name] = $this->$name;
     }
     
     if ($this->status == "deleted") {
-      unset($aa['sample_url']);
-      unset($aa['jpeg_url']);
-      unset($aa['file_url']);
+      unset($api_attributes['sample_url']);
+      unset($api_attributes['jpeg_url']);
+      unset($api_attributes['file_url']);
     }
 
-    if ($this->status == "flagged" or $this->status == "deleted" or $this->status == "pending") {
-      if ($this->flag_detail) {
-        $aa['flag_detail'] = $this->flag_detail->api_attributes;
-        $this->flag_detail->hide_user = ($this->status == "deleted" and !User::$current->is('>=40'));
-      }
+    if (($this->status == "flagged" or $this->status == "deleted" or $this->status == "pending") && $this->flag_detail) {
+      $api_attributes['flag_detail'] = $this->flag_detail->api_attributes();
+      $this->flag_detail->hide_user = ($this->status == "deleted" and !User::$current->is('>=40'));
     }
-
+    
     # For post/similar results:
     // if not similarity.nil?
       // ret[:similarity] = similarity
     // end
+    
+    return $api_attributes;
   }
   
   # TODO: this function could be somewhere else.
@@ -124,13 +127,13 @@ class Post extends ActiveRecord {
   }
   
   function _get($prop) {
-    if($prop == 'author') {
-      $this->api_attributes['author'] = $this->user->name;
-      return $this->api_attributes['author'];
-    }
+    // if($prop == 'author') {
+      // $this->api_attributes['author'] = $this->user->name;
+      // return $this->api_attributes['author'];
+    // }
     
-    elseif(isset($this->api_attributes) && array_key_exists($prop, $this->api_attributes))
-      return $this->api_attributes[$prop];
+    // elseif(isset($this->api_attributes) && array_key_exists($prop, $this->api_attributes))
+      // return $this->api_attributes[$prop];
   }
   
   function _call($n, $p) {
@@ -144,21 +147,11 @@ class Post extends ActiveRecord {
   }
   
   function to_json() {
-    return to_json($this->api_attributes);
+    return to_json($this->api_attributes());
   }
   
   function to_xml($opts = array()) {
-    return to_xml($this->api_attributes, 'post', $opts);
-  }
-
-  function favorited_by() {
-    if(empty($this->voted_by))
-      $this->voted_by();
-    
-    if(empty($this->voted_by[3]))
-      return array();
-    
-    return $this->voted_by[3];
+    return to_xml($this->api_attributes(), 'post', $opts);
   }
   
   function recalculate_cached_tags() {
@@ -1351,13 +1344,39 @@ class Post extends ActiveRecord {
    * Sql methods? {
    */ 
   
-  // function default_joins() {
-    // return ' JOIN users ON posts.user_id = users.id JOIN posts_tags ON posts.id = posts_tags.post_id JOIN tags ON posts_tags.tag_id = tags.id ';
+  // # Customizing find() because of the "cached_tags" column.
+  // # Problem was that if a tag is updated, the changes wouldn't be reflected on
+  // # all posts tagged with such tag, because their cached_tags column wasn't updated
+  // # alongside the tag.
+  // function find($select, $params = array()) {
+    // $find_params = $this->parse_find_params($select, $params);
+    
+    // $this->default_sql_params($params);
+    
+    // $sql = $this->create_sql($params);
+    
+    // $data = $this->execute_find_sql($sql);
+    
+    // $result = $this->retrieve_find_result($data, $find_params);
+    // return $result;
   // }
   
-  // function default_sql_params(&$params) {
-    // $params['joins'] = $this->default_joins();
-    // $params['select'] = " users.name AS author, GROUP_CONCAT(CONCAT(tags.name, ':', tags.tag_type) SEPARATOR ' ') AS cached_tags ";
+  // private function default_sql_params(&$params) {
+    // if ((isset($params['model_name']) && $params['model_name'] != get_class($this)) || (isset($params['from']) && $params['from'] != $this->t()))
+      // return;
+    
+    // $default_joins = 'JOIN users u ON posts.user_id = u.id JOIN posts_tags pt ON posts.id = pt.post_id JOIN tags t ON pt.tag_id = t.id';
+    // $default_select = "u.name AS author, GROUP_CONCAT(CONCAT(t.name,':',t.tag_type) SEPARATOR ' ') AS cached_tags";
+  
+    // if (isset($params['joins']))
+      // $params['joins'] .= ' ' . $default_joins;
+    // else
+      // $params['joins'] = $default_joins;
+    
+    // if (isset($params['select']))
+      // $params['select'] .= ', ' . $default_select;
+    // else
+      // $params['select'] = 'posts.*, ' . $default_select;
   // }
   
   function generate_sql_range_helper($arr, $field, &$c, &$p) {
@@ -1427,7 +1446,7 @@ class Post extends ActiveRecord {
       // $options['select'] .= ', ';
     // }
     
-    // $options['select'] .= " GROUP_CONCAT(CONCAT(t.name, ':', t.tag_type) SEPARATOR ' ') AS cached_tags";
+    // $options['select'] .= "";
     
     # Join `users` by default to take author's name.
     # Join posts_tags and tags to take tags.
@@ -1665,8 +1684,8 @@ class Post extends ActiveRecord {
     // # We'll need the author's name always. Let's take it from the query
     // # instead of creating a new User model just for the name!
     // # We need tags too.
-    // $sql = "SELECT SQL_CALC_FOUND_ROWS u.name AS author, GROUP_CONCAT(CONCAT(t.name, ':', t.tag_type) SEPARATOR ' ') AS cached_tags ";
-    $sql = "SELECT SQL_CALC_FOUND_ROWS u.name AS author";
+    $sql = "SELECT SQL_CALC_FOUND_ROWS u.name AS author, GROUP_CONCAT(CONCAT(t.name, ':', t.tag_type) SEPARATOR ' ') AS cached_tags ";
+    // $sql = "SELECT SQL_CALC_FOUND_ROWS u.name AS author";
     
     
     if ($options['count'])
@@ -1675,6 +1694,7 @@ class Post extends ActiveRecord {
       $sql .= ', '.$options['select'];
     else
       $sql .= ", p.*";
+      // $sql .= ", p.*, GROUP_CONCAT(CONCAT(t.name, ':', t.tag_type) SEPARATOR ' ') AS cached_tags";
 
     $sql .= " FROM ".implode(' ', $joins);
     $sql .= " WHERE ".implode(' AND ', $conds);
@@ -1765,7 +1785,7 @@ class Post extends ActiveRecord {
    */
   function batch_api_data($posts, $options = array()) {
     foreach ($posts as $post)
-      $result['posts'][] = $post->api_attributes;
+      $result['posts'][] = $post->api_attributes();
     
     if (empty($options['exclude_pools'])) {
       $pool_posts = Pool::$_->get_pool_posts_from_posts($posts);
@@ -1773,7 +1793,7 @@ class Post extends ActiveRecord {
       $result['pools'] = obj2array(Pool::$_->get_pools_from_pool_posts($pool_posts));
       
       foreach ($pool_posts as $pp) {
-        $result['pool_posts'][] = $pp->api_attributes;
+        $result['pool_posts'][] = $pp->api_attributes();
       }
     }
     
@@ -1810,9 +1830,9 @@ class Post extends ActiveRecord {
     return $result;
   }
   
-  function collection_api_attributes(&$posts) {
-    return array_map(function($p){return $p->api_attributes;}, (array)$posts);
-  }
+  // function collection_api_attributes($posts) {
+    // return array_map(function($p){return $p->api_attributes;}, (array)$posts);
+  // }
   
   function api_data() {
     return array(
@@ -1863,19 +1883,27 @@ class Post extends ActiveRecord {
   }
   
   function voted_by() {
-    if($this->voted_by !== false || empty($this->voted_by)) {
+    $votes_tmp = User::$_->find('all', array('joins' => "JOIN post_votes v ON v.user_id = users.id", 'select' => "users.name, users.id, v.score", 'conditions' => array("v.post_id = ? and v.score > 0", $this->id), 'order' => "v.updated_at DESC"));
     
-      $votes_tmp = User::$_->find('all', array('joins' => "JOIN post_votes v ON v.user_id = users.id", 'select' => "users.name, users.id, v.score", 'conditions' => array("v.post_id = ? and v.score > 0", $this->id), 'order' => "v.updated_at DESC"));
-      
-      $votes = array_fill(1, 3, array()); //array(1 => array(), 2 => array(), 3 => array());
-      
-      foreach($votes_tmp as $vt) {
-        $vt = (array)$vt;
-        $votes[array_pop($vt)][] = $vt;
-      }
-      $this->voted_by = $votes ? $votes : false;
+    $votes = array_fill(1, 3, array());
+    
+    foreach($votes_tmp as $vt) {
+      $votes[(int)$vt['score']][] = $vt;
     }
+    
+    $this->voted_by = $votes ? $votes : false;
+    
     return $this->voted_by;
+  }
+  
+  function favorited_by() {
+    if(!isset($this->voted_by))
+      $this->voted_by();
+    
+    if(empty($this->voted_by[3]))
+      return array();
+    
+    return $this->voted_by[3];
   }
   
   /** }

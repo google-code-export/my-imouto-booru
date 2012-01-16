@@ -1,5 +1,5 @@
 <?php
-$mdls = read_files(ROOT.'app/models/');
+$mdls = read_dir(ROOT.'app/models/');
 
 $contents = '<?php
 $models = ' . write_array($mdls) . '

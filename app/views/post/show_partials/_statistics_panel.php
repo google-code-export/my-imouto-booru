@@ -2,7 +2,7 @@
         <h5>Statistics</h5>
         <ul>
           <li>Id: <?php echo $post->id ?></li>
-          <li>Posted: <a href="/post?tags=date%3A<?php echo date('Y-m-d', $post->api_attributes['created_at']) ?>"><?php echo time_ago_in_words(date('Y-m-d H:i:s', $post->api_attributes['created_at'])) ?> ago</a> by <a href="/user/profile/<?php echo $post->creator_id ?>"><?php echo $post->author ?></a></li>
+          <li>Posted: <a href="/post?tags=date%3A<?php echo date('Y-m-d', datetime_to_timestamp($post->created_at)) ?>"><?php echo time_ago_in_words(date('Y-m-d H:i:s', datetime_to_timestamp($post->created_at))) ?> ago</a> by <a href="/user/profile/<?php echo $post->creator_id ?>"><?php echo $post->author ?></a></li>
           <li>Size: <?php echo $post->width , 'x' , $post->height; ?></li>
 <?php if ($post->source) : ?>
           <li>Source: <?php echo propper_source($post) ?></li>

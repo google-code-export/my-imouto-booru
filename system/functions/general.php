@@ -120,6 +120,11 @@ function gmd($format = 'Y-m-d H:i:s'){
   return gmdate($format);
 }
 
+function datetime_to_timestamp($datetime) {
+  $date = new DateTime($datetime);
+  return $date->getTimestamp();
+}
+
 /**
  * GMD math.
  *

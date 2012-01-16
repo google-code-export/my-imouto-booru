@@ -49,7 +49,7 @@ function translate_chars($string) {
   );
 }
 
-function bytes_to_human($bytes){ 
+function number_to_human_size($bytes){ 
 	$size = $bytes / 1024; 
 	if($size < 1024){ 
 		$size = number_format($size, 1); 

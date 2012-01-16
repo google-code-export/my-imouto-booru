@@ -96,7 +96,7 @@ unset($results);
 switch (Request::$format) {
   case 'json':
     if (empty(Request::$params->api_version) || Request::$params->api_version != "2") {
-      render('json', to_json(Post::$_->collection_api_attributes($posts)));
+      render('json', to_json(array_map(function($p){return $p->api_attributes();}, (array)$posts)));
       return;
     }
 

@@ -86,6 +86,9 @@ class DB {
   private static function drop_error($e, $on_state) {
     self::$error = true;
     
+    if (!SYSCONFIG::system_error_reporting)
+      return;
+    
     if (self::$detailed_errors) {
       $err = debug_backtrace();
       
@@ -126,7 +129,7 @@ class DB {
     $sql = array_shift($params);
     
     # Workaround for queries with named placeholders
-    if (is_int(strpos($sql, ':')) && !is_int(key($params[0])))
+    if (isset($params[0]) && is_array($params[0]) && self::has_named_placeholders($sql) && !is_int(key($params[0])))
       $params = array_shift($params);
     
     return array($sql, $params);
@@ -157,6 +160,9 @@ class DB {
       
       $parsed_params = array_merge($parsed_params, $current_param);
       
+      // if (!$current_param)
+        // vde($sql);
+      
       $marks = implode(', ', array_fill(0, count($current_param), '?'));
       $part = str_replace_limit('MULTIMARK', $marks, $part);
       
@@ -172,6 +178,31 @@ class DB {
     return mysql_real_escape_string($str);
   }
   
+  private static function has_named_placeholders($sql) {
+    # Avoiding to use preg_match as much as possible.
+    if (is_int(strpos($sql, ':'))) {
+      $has_named_placeholders = false;
+      
+      $substr = substr($sql, strpos($sql, ':'));
+      $strlen = strlen($substr);
+      while ($strlen) {
+        if (ctype_alpha(substr($substr, strpos($substr, ':') + 1, 1))) {
+          $has_named_placeholders = true;
+          break;
+
+        } else {
+          $substr = substr($substr, strpos($substr, ':') + 1);
+          if (is_bool(strpos($substr, ':')))
+            break;
+          $strlen = strlen($substr);
+        }
+      }
+    } else
+      $has_named_placeholders = false;
+    
+    return $has_named_placeholders;
+  }
+  
   static function bind_params($sql, $params) {
     if (!$params)
       return $sql;
@@ -181,8 +212,7 @@ class DB {
     if (is_int(strpos($sql, '?')))
       $marker_question = true;
     
-    if (is_int(strpos($sql, ':')))
-      $marker_name = true;
+    $marker_name = self::has_named_placeholders($sql);
     
     if ($marker_question && $marker_name)
       throw new Exception('<strong>DB::bind_params:</strong> Only one type of markers is allowed.');
@@ -225,7 +255,7 @@ class DB {
       
       $sql = trim($sql);
       
-    } else {
+    } elseif ($marker_name) {
       foreach ($params as $key => $param) {
         if (is_bool(strpos($sql, ":$key"))) {
           throw new Exception('<strong>DB::bind_params:</strong> Keys don\'t match named placeholders.');

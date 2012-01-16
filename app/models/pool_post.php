@@ -7,17 +7,25 @@ belongs_to('prev_post', array('model_name' => "Post", 'foreign_key' => "prev_pos
 class PoolPost extends ActiveRecord {
   static $_;
   
-  var $api_attributes = array('id', 'pool_id', 'post_id', 'active', 'sequence', 'next_post_id', 'prev_post_id');
-  
   function _construct() {
     $this->active = true;
     $this->sequence = (string)$this->sequence;
-    $this->api_attributes = array_fill_keys($this->api_attributes, '');
-    foreach (array_keys($this->api_attributes) as $attr) {
+    // $this->api_attributes = array_fill_keys($this->api_attributes, '');
+
+  }
+  
+  function api_attributes() {
+    $api_attributes = array('id', 'pool_id', 'post_id', 'active', 'sequence', 'next_post_id', 'prev_post_id');
+    
+    $api_attributes = array_fill_keys($api_attributes, null);
+    
+    foreach (array_keys($api_attributes) as $attr) {
       // # TODO: Don't know what 'active' is about. It's a "versioned".
       if (isset($this->$attr))
-        $this->api_attributes[$attr] = &$this->$attr;
+        $api_attributes[$attr] = $this->$attr;
     }
+    
+    return $api_attributes;
   }
   
   function can_change_is_public($user) {
@@ -43,7 +51,7 @@ class PoolPost extends ActiveRecord {
   }
 
   function to_json($params = array()) {
-    return to_json($this->api_attributes, $params);
+    return to_json($this->api_attributes(), $params);
   }
 }
 ?>

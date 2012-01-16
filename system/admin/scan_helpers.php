@@ -1,5 +1,5 @@
 <?php
-foreach (read_files(ROOT.'app/helpers/') as $helper)
+foreach (read_dir(ROOT.'app/helpers/') as $helper)
   $helpers[] = str_replace('_helper', '', $helper);
 
 $contents = '<?php

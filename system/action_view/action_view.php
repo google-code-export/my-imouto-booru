@@ -46,8 +46,10 @@ class ActionView {
     } elseif ($type == 'xml') {
       header('Content-type: application/rss+xml; charset=UTF-8');
       
-      if (is_array($value))
-        $value = to_xml($value, 'response');
+      if (is_array($value) || is_object($value)) {
+        $root = isset($params['root']) ? $params['root'] : 'response';
+        $value = to_xml($value, $root);
+      }
       
       echo $value;
     }

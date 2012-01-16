@@ -6,7 +6,7 @@ has_one('user_blacklisted_tag');
 belongs_to('avatar_post', array('model_name' => "Post", 'foreign_key' => 'avatar_post_id'));
 
 before('validation', 'commit_secondary_languages');
-before('create', 'set_role');
+before('create', 'can_signup, set_role');
 before('save', 'encrypt_password');
 
 after('create', 'set_default_blacklisted_tags, increment_count');
@@ -312,10 +312,16 @@ class User extends ActiveRecord {
   }
   
   /* } level methods { */
+  function can_signup() {
+    if (!CONFIG::enable_signups) {
+      $this->record_errors->add('signups', 'are disabled');
+      return false;
+    }
+    return true;
+  }
+  
   function set_role() {
-    // if (User::$_->fast_count == 0)
-      // $this->level = CONFIG::$user_levels["Admin"]
-    // else
+    
     if (CONFIG::enable_account_email_activation)
       $this->level = CONFIG::$user_levels["Unactivated"];
     else

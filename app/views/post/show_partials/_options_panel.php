@@ -21,10 +21,10 @@ if($post->is_image() && $post->can_be_seen_by()):
   <?php if ($post->use_sample()): ?>
         <li><a href="<?php echo $url ?>" class="<?php echo $class_file ?>" id="highres-show" link_width="<?php echo $post->width ?>" link_height="<?php echo $post->height ?>" onclick="Post.highres(); return false">View larger version</a></li>
   <?php endif ?>
-        <li><a href="<?php echo $post->jpeg_url ?>" class="<?php echo $class_file ?>" id="highres"><?php echo $post->has_sample()?"Download larger version":"Image" ?> (<?php echo bytes_to_human($size).' '.$ext ?>)</a></li>
+        <li><a href="<?php echo $post->jpeg_url ?>" class="<?php echo $class_file ?>" id="highres"><?php echo $post->has_sample()?"Download larger version":"Image" ?> (<?php echo number_to_human_size($size).' '.$ext ?>)</a></li>
   <?php if ($post->has_jpeg()): ?>
         <?php # If we have a JPEG, the above link was the JPEG.  Link to the PNG here. ?>
-        <li><a href="<?php echo $post->file_url ?>" class="original-file-unchanged" id="png">Download PNG (<?php echo bytes_to_human($post->file_size) ?>)</a></li>
+        <li><a href="<?php echo $post->file_url ?>" class="original-file-unchanged" id="png">Download PNG (<?php echo number_to_human_size($post->file_size) ?>)</a></li>
   <?php endif ?>
 <?php endif ?>
 <?php if($post->can_user_delete()): ?>

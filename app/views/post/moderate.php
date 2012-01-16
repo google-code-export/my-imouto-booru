@@ -37,8 +37,8 @@
       <tbody>
         <?php foreach ($pending_posts as $p) : ?>
           <tr class="<?php if ($p->score > 2): ?>good<?php ;elseif ($p->score < -2): ?>bad<?php endif ?> <?php echo cycle('even', 'odd') ?>">
-            <td><input type="checkbox" class="p" name="ids[<?php echo p.id ?>]" onclick="highlight_row(this);return false;"></td>
-            <td><?php echo link_to(image_tag($p->preview_url, array('width' => $p->preview_dimensions('w'), 'height' => $p->preview_dimensions('h')), array('post#show', 'id' => $p->id))) ?></td>
+            <td><input type="checkbox" class="p" name="ids[<?php echo $p->id ?>]" onclick="highlight_row(this);"></td>
+            <td><?php echo link_to(image_tag($p->preview_url, array('width' => $p->preview_dimensions('w'), 'height' => $p->preview_dimensions('h'))), array('post#show', 'id' => $p->id)) ?></td>
             <td class="checkbox-cell">
               <ul>
                 <li>Uploaded by <?php echo link_to(h($p->author), array("user#show", 'id' => $p->user_id)) ?> <?php echo time_ago_in_words($p->created_at) ?> ago (<?php echo link_to("mod", array("#moderate", 'query' => "user:{$p->author}")) ?>)</li>
@@ -47,7 +47,7 @@
                   <li>Parent: <?php echo link_to($p->parent_id, array("#moderate", 'query' => "parent:{$p->parent_id}")) ?></li>
                 <?php endif ?>
                 <li>Tags: <?php echo h($p->cached_tags) ?></li>
-                <li>Score: <span id="post-score-<?php echo p.id ?>"><?php echo p.score ?></span></li>
+                <li>Score: <span id="post-score-<?php echo $p->id ?>"><?php echo $p->score ?></span></li>
                 <?php if ($p->flag_detail) : ?>
                 <li>
                   Reason: <?php echo h($p->flag_detail->reason) ?> (<?php if (!$p->flag_detail->user_id) : ?>automatic flag<?php ;else: ?><?php echo link_to(h($p->flag_detail->author), array("user#show", 'id' => $p->flag_detail->user_id)) ?><?php endif ?>)
@@ -98,7 +98,7 @@
                   Reason: <?php echo h($p->flag_detail->reason) ?> (<?php if (!$p->flag_detail->user_id) : ?>automatic flag<?php ;else: ?><?php echo link_to(h($p->flag_detail->author), array("user#show", 'id' => $p->flag_detail->user_id)) ?><?php endif ?>)
                 </li>
                 <?php endif ?>
-                <li>Size: <?php echo bytes_to_human($p->file_size) ?>, <?php echo $p->width ?>x<?php echo $p->height ?></li>
+                <li>Size: <?php echo number_to_human_size($p->file_size) ?>, <?php echo $p->width ?>x<?php echo $p->height ?></li>
               </ul>
             </td>
           </tr>
