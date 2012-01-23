@@ -20,10 +20,31 @@ function update_revision_version($version) {
     die("An error occured when trying to write config.php file.$notice");
 }
 
-$query = 'ALTER TABLE posts DROP COLUMN cached_tags';
-db::execute_sql($query);
-if (db::$error)
-  die("Couldn't execute query: $query");
+$queries = array(
+  'DROP TRIGGER IF EXISTS trg_posts_tags__insert',
+  'CREATE TRIGGER trg_posts_tags__insert
+  AFTER INSERT ON posts_tags
+  FOR EACH ROW
+  BEGIN
+    UPDATE tags SET post_count = post_count + 1 WHERE tags.id = NEW.tag_id;
+  END',
+  
+  'DROP TRIGGER IF EXISTS trg_posts_tags__delete',
+  'CREATE TRIGGER trg_posts_tags__delete
+  AFTER DELETE ON posts_tags
+  FOR EACH ROW
+  BEGIN
+    UPDATE tags SET post_count = post_count - 1 WHERE tags.id = OLD.tag_id;
+  END',
+  
+  "UPDATE tags SET post_count = (SELECT COUNT(*) FROM posts_tags pt, posts p WHERE pt.tag_id = tags.id AND pt.post_id = p.id AND p.status <> 'deleted')"
+);
 
-update_revision_version('0.0.1 2');
+foreach ($queries as $query) {
+  DB::execute_sql($query);
+  if (DB::$error)
+    die("There was an error executing the following query:<br />$query");
+}
+
+update_revision_version('0.0.1 3');
 ?>

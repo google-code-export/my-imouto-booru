@@ -37,6 +37,10 @@ class ActionController {
       die_404();
   }
   
+  static function rescue_request() {
+    return false;
+  }
+  
   static function load_controller() {
     if (false === (include CTRLSPATH . Request::$controller . '/_controller.php'))
       die('Could not load controller file!');
@@ -48,8 +52,13 @@ class ActionController {
   }
   
   static function action_exists() {
-    if(in_array(Request::$action, self::$actions))
-      return true;
+    foreach (self::$actions as $k => $v) {
+      if (!is_int($k) && Request::$action == $k) {
+        Request::$action = $v;
+        return true;
+      } elseif (is_int($k) && Request::$action == $v)
+        return true;
+    }
   }
   
   static function routing() {

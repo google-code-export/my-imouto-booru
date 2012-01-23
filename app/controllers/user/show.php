@@ -1,5 +1,5 @@
 <?php
-include_model('comment', 'note_version');
+include_model('comment, note_version');
 
 if (!empty(Request::$params->name))
   $user = User::$_->find_by_name(Request::$params->name);

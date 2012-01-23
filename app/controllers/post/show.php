@@ -1,6 +1,6 @@
 <?php
 required_params('id');
-include_model('note', 'comment');
+include_model('note, comment');
 
 $post = Post::$_->find(Request::$params->id);
 

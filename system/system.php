@@ -159,8 +159,15 @@ class System {
   }
   
   static function controller_exists() {
-    if(in_array(Request::$controller, self::$controllers))
-      return true;
+    foreach (self::$controllers as $k => $v) {
+      if (!is_int($k) && Request::$controller == $k) {
+        Request::$controller = $v;
+        return true;
+      } elseif (is_int($k) && Request::$controller == $v)
+        return true;
+    }
+    
+    return ActionController::rescue_request();
   }
   
   static function get_model_table($model) {

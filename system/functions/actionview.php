@@ -69,11 +69,9 @@ function render_partial($part, $locals = array()) {
     }
   }
   
-  ob_start();
-  
-  if (is_int($pos = strpos($part, '/'))) {
-    preg_match('~\/([^\/]+)$~', $part, $m);
-    $part = preg_replace('~\/([^\/]+)$~', '/_\1.php', $part);
+  if (is_int(strpos($part, '/'))) {
+    $pos = strrpos($part, '/');
+    $part = substr_replace($part, '/_', $pos, 1) . '.php';
     $file = VIEWPATH . $part;
   } else
     $file = VIEWPATH . Request::$controller . '/_' . $part . '.php';
@@ -81,8 +79,6 @@ function render_partial($part, $locals = array()) {
   if (false === (include $file)) {
     echo "Partial ($part) could not be found.";
   }
-  
-  echo ob_get_clean();
 }
 
 function exit_with_status($status, $message = null) {

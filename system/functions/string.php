@@ -38,7 +38,7 @@ function u($str) {
 }
 
 # Cleans up a string, translating chars, removing non \w ones and converting whitespaces to hyphens.
-function url_friendly_str($str) {
+function str_clean($str) {
   return trim(preg_replace(array('~[^\w-]~', '~-{2,}~'), array('', '-'), str_replace(array(' ', '--'), '-', translate_chars(strtolower($str)))), ' -_');
 }
 

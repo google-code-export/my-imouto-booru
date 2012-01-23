@@ -7,6 +7,30 @@ class Tag extends ActiveRecord {
   function _construct() {
     $this->tag_type = (int)$this->tag_type;
     $this->type_name = $this->type_name($this->tag_type);
+    $this->is_ambiguous = (bool)$this->is_ambiguous;
+  }
+  
+  static function recalculate_post_count() {
+    $sql = "UPDATE tags SET post_count = (SELECT COUNT(*) FROM posts_tags pt, posts p WHERE pt.tag_id = tags.id AND pt.post_id = p.id AND p.status <> 'deleted')";
+    db::execute_sql($sql);
+  }
+  
+  function api_attributes() {
+    return array(
+      'id' => $this->id, 
+      'name' => $this->name, 
+      'count' => $this->post_count, 
+      'type' => $this->tag_type, 
+      'ambiguous' => $this->is_ambiguous
+    );
+  }
+  
+  function to_xml($options = array()) {
+    return to_xml($this->api_attributes(), "tag", array('skip_instruct' => true));
+  }
+
+  function to_json($args = array()) {
+    return to_json($this->api_attributes());
   }
   
   function batch_get_tag_types_for_posts(&$posts) {
@@ -134,7 +158,7 @@ class Tag extends ActiveRecord {
     $sql = "";
 
     # Ignore deleted posts in pt0, so the count excludes them.
-    $cond[] = "(SELECT TRUE FROM POSTS p0 WHERE p0.id = pt0.post_id AND p0.status <> 'deleted')";
+    $cond[] = "(SELECT TRUE FROM posts p0 WHERE p0.id = pt0.post_id AND p0.status <> 'deleted')";
     
     foreach (range(1, count($tags)) as $i)
       $from[] = "posts_tags pt${i}";

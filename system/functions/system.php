@@ -1,9 +1,10 @@
 <?php
 /**
+ * $models - comma-separated string of model names (their file name, not class name).
  * When including a model, do so in the first line of the model file.
  */
-function include_model() {
-  $models = func_get_args();
+function include_model($models) {
+  $models = explode(',', str_replace(' ', '', $models));
   
   foreach ($models as $model) {
     $model_name = strtolower(ApplicationModel::filename_to_modelname($model));

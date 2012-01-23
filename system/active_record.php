@@ -155,6 +155,8 @@ class ActiveRecord {
           $n = substr($n, 3);
         }
         
+        strpos($n, '_') === 0 && $n = substr($n, 1);
+        
         if (isset($o[0]) && ($o[0] == 'first' || $o[0] == 'last' || $o[0] == 'all'))
           $select_type = array_shift($o);
         elseif (!$select_type)
@@ -192,7 +194,7 @@ class ActiveRecord {
       break;
       
       # To check if an attribute has changed upon save();
-      case ((strlen($n) - strpos($n, '_changed')) == 8) :
+      case (is_int(strpos($n, '_changed')) && (strlen($n) - strpos($n, '_changed')) == 8) :
         $attribute = str_replace('_changed', '', $n);
         return array_key_exists($attribute, $this->changed_attributes);
       break;
@@ -770,7 +772,7 @@ class ActiveRecord {
    * @array $values: If present, object will be updated according
    * to this array, otherwise, according to its properties.
    */
-  final function save($values = array()) {
+  final function save() {
     if (!$this->validate_data(null, 'save'))
       return false;
     
@@ -781,7 +783,7 @@ class ActiveRecord {
       if (!$this->create())
         return false;
     } else {
-      if (!$this->save_do($values))
+      if (!$this->save_do())
         return false;
     }
     
@@ -790,15 +792,15 @@ class ActiveRecord {
     return true;
   }
   
-  private final function save_do($values) {
+  private final function save_do() {
     $w = $wd = $q = $d = $this->changed_attributes = array();
     
     $dt = $this->model_data()->tables->get_names();
     
-    if (!$values)
+    // if (!$values)
       $data = &$this;
-    else
-      $data = &$values;
+    // else
+      // $data = &$values;
 
     try {
       $current = $this->find_current();
@@ -1036,15 +1038,16 @@ class ActiveRecord {
     $sql = $this->create_sql($args);
     
     $result = call_user_func_array('DB::execute_sql', $sql);
-    return isset($result[0]['COUNT(*)']) ? $result[0]['COUNT(*)'] : false;
+    return isset($result[0]['COUNT(*)']) ? (int)$result[0]['COUNT(*)'] : false;
   }
   
   protected function parse_find_params(&$select_type, &$params = array()) {
     $select_types = array('first', 'last', 'all');
     
     if (is_string($select_type) && in_array($select_type, $select_types)) {
-      if (!$params)
-        return false;
+      // if (!$params)
+        // $params['select']
+        // return false;
       
       $find_params['select_type'] = $select_type;
       
@@ -1061,6 +1064,8 @@ class ActiveRecord {
       # array of IDs.
       $params = array('conditions' => array($this->t() . '.id IN (??)', $params));
     }
+    
+    check_array($params);
     
     if (!empty($params['return_array'])) {
       $find_params['return_array'] = true;
@@ -1238,27 +1243,27 @@ class ActiveRecord {
   function collection() {
     $args = func_get_args();
     
-    if (!$args)
-      return false;
+    // if (!$args)
+      // return false;
     
     # If first value is 'Paginate->foo', $foo will be filled with
     # the FOUND_ROWS() value of the query. This is needed to calculate
     # pages for paginator.
-    if (is_int(strpos($args[0], 'Paginate->'))) {
+    if (is_string($args[0]) && is_int(strpos($args[0], 'Paginate->'))) {
       $paginate = substr(array_shift($args), 10);
       
       $this->activate_calc_rows($paginate);
       
-      if (empty($args))
-        return false;
+      // if (empty($args))
+        // return false;
       
       $find_func = array_shift($args);
     } else {
       $find_func = array_shift($args);
     }
     
-    if (!$args)
-      return false;
+    // if (!$args)
+      // return false;
     
     $params = &$args;
     

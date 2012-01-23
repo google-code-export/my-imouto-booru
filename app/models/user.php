@@ -1,5 +1,5 @@
 <?php
-include_model('ban', 'tag', 'user_blacklisted_tag');
+include_model('ban, tag, user_blacklisted_tag');
 
 has_one('ban', array('foreign_key' => 'user_id'));
 has_one('user_blacklisted_tag');
@@ -272,6 +272,7 @@ class User extends ActiveRecord {
 
     return $favorite_tags;
   }
+  
   function logout(){
     cookie_remove("login");
     cookie_remove("pass_hash");

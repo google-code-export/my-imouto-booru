@@ -1,5 +1,5 @@
 <?php
-include_model('note', 'flagged_post_detail', 'post_votes', 'TagImplication');
+include_model('note, flagged_post_detail, post_votes, tag_implication');
 
 belongs_to('user');
 
@@ -126,16 +126,6 @@ class Post extends ActiveRecord {
       return true;
   }
   
-  function _get($prop) {
-    // if($prop == 'author') {
-      // $this->api_attributes['author'] = $this->user->name;
-      // return $this->api_attributes['author'];
-    // }
-    
-    // elseif(isset($this->api_attributes) && array_key_exists($prop, $this->api_attributes))
-      // return $this->api_attributes[$prop];
-  }
-  
   function _call($n, $p) {
     switch($n) {
       # Checking status: $post->is_pending();
@@ -223,7 +213,6 @@ class Post extends ActiveRecord {
     if (!empty($this->creation_tags)) {
       $this->old_tags = 'tagme';
       $this->tags = $this->creation_tags;
-      $this->commit_tags();
     }
     
     $this->save();
@@ -1000,8 +989,6 @@ class Post extends ActiveRecord {
       if (!preg_match('~^(-pool|pool|rating|parent|child):|^[qse]$~', $tag))
         continue;
       
-      // if (strcompare($tag, array('q', 's', 'e')))
-        // $tag = 'rating:'.$m[0];
       if (in_array($tag, array('q', 's', 'e')))
         $tag = "rating:$tag";
       
@@ -1013,7 +1000,6 @@ class Post extends ActiveRecord {
       switch($metatag) {
         case 'rating':
           # Change rating. This will override rating selected on radio buttons.
-          // if (strcompare($param, array('q', 's', 'e')))
           if (in_array($param, array('q', 's', 'e')))
             $this->rating = $param;
           unset($this->tags[$k]);
@@ -1135,9 +1121,6 @@ class Post extends ActiveRecord {
   
   # Commit metatags; this is done before save, so any changes are stored normally.
   function commit_metatags() {
-    // if (!is_array($this->tags))
-      // return;
-    
     foreach ($this->tags as $k => $tag) {
       switch ($tag) {
         case 'hold':

@@ -103,6 +103,9 @@
     tags_menu.push({"class_names":[],"label":"Mass edit","dest":"/tag/mass_edit"});
 <?php endif ?>
     tags_menu.push({"class_names":[],"label":"Edit","dest":"/tag/edit"});
+<?php if(User::$_->is('==50')) : ?>
+    tags_menu.push({"class_names":[],"label":"Fix count","dest":"/tag/fix_count"});
+<?php endif ?>
     def.push({"class_names":[],"label":"Tags","dest":"/tag?order=date","name":"tags"});
     def[def.length-1].sub = tags_menu;
 

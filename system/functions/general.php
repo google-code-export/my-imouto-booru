@@ -39,8 +39,8 @@ function obj2array($obj) {
   return $new;
 }
 
-function is_indexed_arr(&$arr) {
-  if (!is_array($arr))
+function is_indexed_arr($arr) {
+  if (!is_array($arr) || empty($arr))
     return false;
   
   $i = 0;
