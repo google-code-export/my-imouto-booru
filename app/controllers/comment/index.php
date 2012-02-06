@@ -4,16 +4,11 @@ auto_set_params(array('page' => 1));
 create_page_params(array('limit' => 10));
 
 if (Request::$format == "json" || Request::$format == "xml") {
-  // required_params('post_id');
-  // $comments = new Collection('Comment', 'find', array_merge(Comment::$_->generate_sql(Request::$params), array('per_page' => 25, 'page' => Request::$params->page, 'order' => 'id DESC')));
-  $comments = Comment::$_->collection('find', array_merge(Comment::$_->generate_sql(Request::$params), array('per_page' => 25, 'page' => Request::$params->page, 'order' => 'id DESC')));
-  // vde($comments);
+  $comments = Comment::find_all(array_merge(Comment::generate_sql(Request::$params), array('per_page' => 25, 'page' => Request::$params->page, 'order' => 'id DESC')));
   // Comment.paginate(Comment.generate_sql(params).merge(:per_page => 25, :page => params[:page], :order => "id DESC"))
   respond_to_list($comments);
 } else {
-  
-  // $posts = new Collection('Paginate->found_rows', 'Post', 'find', array('order' => 'last_commented_at DESC', 'conditions' => 'last_commented_at IS NOT NULL', 'per_page' => 10, 'page' => Request::$params->page));
-  $posts = Post::$_->collection('Paginate->found_rows', 'find', array('order' => 'last_commented_at DESC', 'conditions' => 'last_commented_at IS NOT NULL', 'per_page' => 10, 'page' => Request::$params->page));
+  $posts = Post::find_all(array('calc_rows', 'order' => 'last_commented_at DESC', 'conditions' => 'last_commented_at IS NOT NULL', 'per_page' => 10, 'page' => Request::$params->page));
   // Post.paginate :order => "last_commented_at DESC", :conditions => "last_commented_at IS NOT NULL", :per_page => 10, :page => params[:page]
   // vde($posts);
   $comments = array();

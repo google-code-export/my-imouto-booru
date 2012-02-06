@@ -1,5 +1,5 @@
 <?php
-User::$_->save_cookies(User::$current);
+User::save_cookies(User::$current);
 
 $path = empty(Request::$params->url) ? '/user/home' : Request::$url;
 

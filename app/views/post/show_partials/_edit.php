@@ -31,7 +31,7 @@
               <td><input <?php echo tag_attribute('checked', $post->is_shown_in_index) ?>id="is_shown_in_index" name="post[is_shown_in_index]" tabindex="7" type="checkbox" value="1" />
               </td>
             </tr>
-<?php if(User::$_->is('>=20')): ?>
+<?php if(User::is('>=20')): ?>
             <tr>
               <th><label class="block" for="is_note_locked">Note locked</label></th>
               <input name="post[is_note_locked]" type="hidden" value="0" />
@@ -54,7 +54,7 @@
             <tr>
               <th>
                 <label class="block" for="post_tags">Tags</label>
-<?php if(User::$_->is('<20')): ?>
+<?php if(User::is('<20')): ?>
                   <p>Separate tags with spaces (<a href="/help/tags" target="_blank">help</a>)</p>
 <?php endif ?>
               </th>

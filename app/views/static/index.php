@@ -1,5 +1,5 @@
 <?php if(!CONFIG::show_homepage) redirect_to('/post') ?>
-<?php $post_count = Post::$_->get_row_count() ?>
+<?php $post_count = Post::get_row_count() ?>
 <div id="static-index">
   <h1 id="static-index-header"><a href=""><?php echo CONFIG::app_name ?></a></h1>
   <div style="margin-bottom: 1em;" id="links">

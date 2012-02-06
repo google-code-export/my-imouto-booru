@@ -23,22 +23,34 @@ class ActionController {
   static function start() {
     Request::parse_request();
     
-    try {
-      self::routing();
-    } catch (Exception $e) {
+    // try {
+    self::routing();
+    // } catch (Exception $e) {
       // TODO
       // error handling, redirect to 404 ?
-      echo $e->getMessage();
-      exit;
-    }
+      // echo $e->getMessage();
+      // exit;
+    // }
     
     
-    if (!System::controller_exists())
-      die_404();
+    if (!self::controller_exists())
+      exit_with_status(404);
   }
   
   static function rescue_request() {
     return false;
+  }
+  
+  static function controller_exists() {
+    foreach (System::$controllers as $k => $v) {
+      if (!is_int($k) && Request::$controller == $k) {
+        Request::$controller = $v;
+        return true;
+      } elseif (is_int($k) && Request::$controller == $v)
+        return true;
+    }
+    
+    return ActionController::rescue_request();
   }
   
   static function load_controller() {
@@ -62,7 +74,7 @@ class ActionController {
   }
   
   static function routing() {
-    if (!SYSCONFIG::php_parses_routes) {
+    if (!System::$conf->php_parses_routes) {
       return;
     }
     

@@ -29,6 +29,8 @@ class ApplicationModel {
     'include_models'
   );
   
+  static $protected_props = array('current_model_data', 'record_errors', 'changed_attributes', 'empty_model');
+  
   var $is_loaded = false;
   
   function __construct($filename) {
@@ -67,12 +69,12 @@ class ApplicationModel {
       $this->table_name = $table_name;
     
     # Create singleton(?) class.
-    if (property_exists($this->name, '_')) {
-      $model_name = $this->name;
-      $model_name::$_ = new $model_name;
-    }
+    // if (property_exists($this->name, '_')) {
+      // $model_name = $this->name;
+      // $model_name::$_ = new $model_name;
+    // }
     
-    $this->load_tables();
+    $this->load_columns();
     
     $this->assocs = new StdClass;
     $this->register_assocs();
@@ -82,8 +84,8 @@ class ApplicationModel {
     $this->is_loaded = true;
   }
   
-  private function load_tables() {
-    $this->tables = new ApplicationModelTable($this->table_name);
+  private function load_columns() {
+    $this->table = new ApplicationModelTable($this->table_name);
   }
   
   function get_assocs() {
@@ -198,51 +200,40 @@ class ApplicationModel {
 }
 
 class ApplicationModelTable {
-  var $pri_keys = array();
-  var $uni_keys = array();
-  var $mul_keys = array();
-  var $names = array();
+  var $indexes;
+  var $columns = array();
 
   function __construct($model_filename) {
     $table_file = System::get_model_table_filename($model_filename);
     include $table_file;
     
     foreach ($columns as $column_name => $column_data) {
-      $this->names[$column_name] = $column_data;
-      
-      if ($this->names[$column_name]['key'] == 'PRI')
-        $this->pri_keys[] = $column_name;
-      elseif ($this->names[$column_name]['key'] == 'MUL')
-        $this->mul_keys[] = $column_name;
-      elseif ($this->names[$column_name]['key'] == 'UNI')
-        $this->uni_keys[] = $column_name;
+      $this->columns[$column_name] = $column_data;
     }
+    $this->indexes = $indexes;
   }
   
   function get_names() {
-    $names = array();
-    foreach (array_keys($this->names) as $name)
-      $names[] = $name;
-    return $names;
+    return array_keys($this->columns);
   }
   
-  function get_primary_key() {
-    return $this->pri_keys;
-  }
-  
-  function get_keycolumns() {
-    if ($this->pri_keys)
-      return $this->pri_keys;
-    elseif ($this->uni_keys)
-      return $this->uni_keys;
+  function get_indexes($type = null) {
+    if (!$type) {
+      return $this->indexes ? current($this->indexes) : array();
+    } else {
+      if (isset($this->indexes[strtoupper($type)]))
+        return $this->indexes[strtoupper($type)];
+    }
+    
+    return false;
   }
   
   function get_type($column_name) {
-    return $this->names[$column_name]['type'];
+    return $this->columns[$column_name]['type'];
   }
   
   function exists($column_name) {
-    return !empty($this->names[$column_name]);
+    return !empty($this->columns[$column_name]);
   }
 }
 ?>

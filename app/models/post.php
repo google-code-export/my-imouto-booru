@@ -24,7 +24,6 @@ has_many('children', array('model_name' => 'Post', 'order' => 'id', 'foreign_key
 before('validation_on_create', 'download_source, ensure_tempfile_exists, determine_content_type, validate_content_type, generate_hash, set_image_dimensions, set_image_status, check_pending_count, generate_sample, generate_jpeg, generate_preview, move_file');
 
 class Post extends ActiveRecord {
-  static $_;
   
   function _construct() {
     $prefix = !CONFIG::download_filename_prefix ? null : CONFIG::download_filename_prefix.' ';
@@ -106,7 +105,7 @@ class Post extends ActiveRecord {
 
     if (($this->status == "flagged" or $this->status == "deleted" or $this->status == "pending") && $this->flag_detail) {
       $api_attributes['flag_detail'] = $this->flag_detail->api_attributes();
-      $this->flag_detail->hide_user = ($this->status == "deleted" and !User::$current->is('>=40'));
+      $this->flag_detail->hide_user = ($this->status == "deleted" and !User::is('>=40'));
     }
     
     # For post/similar results:
@@ -207,7 +206,7 @@ class Post extends ActiveRecord {
   }
   
   protected function after_creation() {
-    $tagme = Tag::$_->find_or_create_by_name('tagme');
+    $tagme = Tag::find_or_create_by_name('tagme');
     DB::insert('posts_tags VALUES (?, ?)', $this->id, $tagme->id);
     
     if (!empty($this->creation_tags)) {
@@ -218,20 +217,20 @@ class Post extends ActiveRecord {
     $this->save();
   }
   
-  function can_user_delete(&$user = null) {
+  function can_user_delete($user = null) {
     if(!$user)
-      $user =& User::$current;
+      $user = User::$current;
     
     if(!$user->has_permission($this))
       return false;
-    elseif (!$user->is('>=40') && !$this->is_held && (gmd() - strtotime($this->created_at)) > 60*60*24)
+    elseif (!$user->level >= 40 && !$this->is_held && (gmd() - strtotime($this->created_at)) > 60*60*24)
       return false;
 
     return true;
   }
   
-  function static_destroy_with_reason($id, $reason, $current_user) {
-    $post = Post::$_->find($id);
+  static function static_destroy_with_reason($id, $reason, $current_user) {
+    $post = self::find($id);
     $post->destroy_with_reason($reason, $current_user);
   }
   
@@ -273,7 +272,7 @@ class Post extends ActiveRecord {
     if ($this->flag_detail) {
       $this->flag_detail->update_attributes(array('reason' => $reason, 'user_id' => $creator_id, 'created_at' => gmd()));
     } else {
-      FlaggedPostDetail::$_->create(array('post_id' => $this->id, 'reason' => $reason, 'user_id' => $creator_id, 'is_resolved' => false));
+      FlaggedPostDetail::create(array('post_id' => $this->id, 'reason' => $reason, 'user_id' => $creator_id, 'is_resolved' => false));
     }
   }
   
@@ -310,8 +309,7 @@ class Post extends ActiveRecord {
    */
   
   function recent_comments() {
-    // return new Collection('Comment', 'find', 'all', array('conditions' => array("post_id = ?", $this->id), 'order' => "id desc", 'limit' => 6));
-    return Comment::$_->collection('find', array('conditions' => array("post_id = ?", $this->id), 'order' => "id desc", 'limit' => 6));
+    return Comment::find_all(array('conditions' => array("post_id = ?", $this->id), 'order' => "id desc", 'limit' => 6));
   }
   
   /** }
@@ -341,7 +339,7 @@ class Post extends ActiveRecord {
     if ($options['type'] == 'sample') {
       $tags = "sample";
     } else
-     $tags = Tag::$_->compact_tags($this->tags, 150);
+     $tags = Tag::compact_tags($this->tags, 150);
     
     # Filter characters.
     $tags = str_replace(array('/', '?'), array('_', ''), $tags);
@@ -499,7 +497,7 @@ class Post extends ActiveRecord {
     if (!$this->regenerate_hash())
       return false;
     
-    if (Post::$_->exists("md5 = ?", $this->md5)) {
+    if (Post::exists("md5 = ?", $this->md5)) {
       $this->record_errors->add('md5', "already exists");
       return false;
     } else
@@ -519,7 +517,7 @@ class Post extends ActiveRecord {
     if(!$this->image_is_too_small())
       return true;
     
-    if ($this->user->is('>=33'))
+    if ($this->user->level >= 33)
       return;
 
     $this->status = "pending";
@@ -538,9 +536,9 @@ class Post extends ActiveRecord {
   function check_pending_count() {
     if (!CONFIG::max_pending_images) return;
     if ($this->status != "pending") return;
-    if ($this->user->is('>=33')) return;
+    if ($this->user->level >= 33) return;
 
-    $pending_posts = Post::$_->count(array('conditions' => array("user_id = ? AND status = 'pending'", $this->user_id)));
+    $pending_posts = Post::count(array('conditions' => array("user_id = ? AND status = 'pending'", $this->user_id)));
     if ($pending_posts < CONFIG::max_pending_images) return;
 
     $this->record_errors->add_to_base("You have too many posts pending moderation");
@@ -939,7 +937,7 @@ class Post extends ActiveRecord {
       
       $tag = $tag_type[0];
       
-      $type = Tag::$_->type_name($tag_type[1]);
+      $type = Tag::type_name($tag_type[1]);
       $parsed[$tag] = $type;
     }
     
@@ -952,7 +950,7 @@ class Post extends ActiveRecord {
   function generate_cached_tags() {
     $string = array();
     foreach ($this->parsed_cached_tags as $name => $type_name)
-      $string[] = "$name:".Tag::$_->type_code($type_name);
+      $string[] = "$name:".Tag::type_code($type_name);
     
     $this->cached_tags = implode(' ', $string);
   }
@@ -1013,18 +1011,18 @@ class Post extends ActiveRecord {
             # Workaround: I don't understand how can the pool be found when finding_by_name
             # using the id.
             if (ctype_digit($name))
-              $pool = Pool::$_->find_by_id($name);
+              $pool = Pool::find_by_id($name);
             else
-              $pool = Pool::$_->find_by_name($name);
+              $pool = Pool::find_by_name($name);
 
             # Set :ignore_already_exists, so pool:1:2 can be used to change the sequence number
             # of a post that already exists in the pool.
-            $options = array('user' => User::$_->find(($this->updater_user_id)), 'ignore_already_exists' => true);
+            $options = array('user' => User::find(($this->updater_user_id)), 'ignore_already_exists' => true);
             if ($seq)
               $options['sequence'] = $seq;
             
             if (!$pool and !ctype_digit($name))
-              $pool = Pool::$_->create(array('name' => $name, 'is_public' => false, 'user_id' => $this->updater_user_id));
+              $pool = Pool::create(array('name' => $name, 'is_public' => false, 'user_id' => $this->updater_user_id));
             
             if (!$pool)
               continue;
@@ -1046,7 +1044,7 @@ class Post extends ActiveRecord {
           $name = $param;
           $cmd = $subparam;
 
-          $pool = Pool::$_->find_by_name($name);
+          $pool = Pool::find_by_name($name);
           if (!$pool->can_change(User::$current, null))
             break;
 
@@ -1085,8 +1083,8 @@ class Post extends ActiveRecord {
     }
     
     $new_tags = array_diff($this->tags, $this->old_tags);
-    $new_tags = array_merge($new_tags, TagAlias::$_->to_aliased($new_tags));
-    $new_tags = array_merge($new_tags, TagImplication::$_->with_implied($new_tags));
+    $new_tags = array_merge($new_tags, TagAlias::to_aliased($new_tags));
+    $new_tags = array_merge($new_tags, TagImplication::with_implied($new_tags));
     $new_tags = array_values(array_unique($new_tags));
     
     $old_tags = array_diff($this->old_tags, $this->tags);
@@ -1103,13 +1101,13 @@ class Post extends ActiveRecord {
       if (array_key_exists($tag, $this->parsed_cached_tags))
         unset($this->parsed_cached_tags[$tag]);
       
-      $tag = Tag::$_->find_by_name($tag);
+      $tag = Tag::find_by_name($tag);
       if ($tag)
         DB::delete('posts_tags WHERE post_id = ? AND tag_id = ?', $this->id, $tag->id);
     }
     
     foreach ($new_tags as $tag) {
-      $tag = Tag::$_->find_or_create_by_name($tag);
+      $tag = Tag::find_or_create_by_name($tag);
       $this->parsed_cached_tags[$tag->name] = $tag->type_name;
       DB::insert_ignore('posts_tags VALUES (?, ?)', $this->id, $tag->id);
     }
@@ -1186,7 +1184,7 @@ class Post extends ActiveRecord {
     if (!$post_id)
       return;
     
-    $has_children = Post::$_->exists('parent_id = ? AND status <> "deleted"', $post_id);
+    $has_children = Post::exists('parent_id = ? AND status <> "deleted"', $post_id);
     
     DB::update("posts SET has_children = ? WHERE id = ?", $has_children, $post_id);
   }
@@ -1195,7 +1193,7 @@ class Post extends ActiveRecord {
     if (isset($this->parent))
       return $this->parent;
     
-    $this->parent = Post::$_->find_by_id($this->parent_id);
+    $this->parent = Post::find_by_id($this->parent_id);
     return $this->parent;
   }
   
@@ -1212,7 +1210,7 @@ class Post extends ActiveRecord {
     
     $parent = new Post('find', $this->parent_id);
     
-    foreach (PostVotes::$_->collection('find', array('conditions' => array('post_id = ?', $this->id))) as $vote) {
+    foreach (PostVotes::find_all(array('conditions' => array('post_id = ?', $this->id))) as $vote) {
       $parent->vote($vote->score, $vote->user);
       $this->vote(0, $vote->user);
     }
@@ -1274,7 +1272,7 @@ class Post extends ActiveRecord {
     $this->touch_index_timestamp();
   }
   
-  function batch_activate($user_id, $post_ids) {
+  static function batch_activate($user_id, $post_ids) {
     $conds = $cond_params = array();
 
     $conds[] = "is_held = true";
@@ -1298,7 +1296,7 @@ class Post extends ActiveRecord {
     # If anyone knows a better way to do this, it'll be more than welcome.
     sort($post_ids);
     $s = 1;
-    $timestamp = new DateTime(self::$_->find_index_timestamp(array('order' => 'id DESC')));
+    $timestamp = new DateTime(self::find_index_timestamp(array('order' => 'id DESC')));
     
     foreach ($post_ids as $id) {
       $timestamp->add(new DateInterval('PT' . $s . 'S'));
@@ -1362,7 +1360,7 @@ class Post extends ActiveRecord {
       // $params['select'] = 'posts.*, ' . $default_select;
   // }
   
-  function generate_sql_range_helper($arr, $field, &$c, &$p) {
+  static function generate_sql_range_helper($arr, $field, &$c, &$p) {
     switch ($arr[0]) {
       case 'eq':
         $c[] = $field." = ?";
@@ -1411,12 +1409,12 @@ class Post extends ActiveRecord {
     // }
   }
   
-  function generate_sql($q, $options = array()) {
+  static function generate_sql($q, $options = array()) {
     if (is_array($q)) {
       $original_query = isset($options['original_query']) ? $options['original_query'] : null;
     } else {
       $original_query = $q;
-      $q = Tag::$_->parse_query($q);
+      $q = Tag::parse_query($q);
     }
     
     # Filling default values.
@@ -1445,13 +1443,13 @@ class Post extends ActiveRecord {
     if (!empty($q['error']))
       $conds[] = "FALSE";
 
-    $this->generate_sql_range_helper($q['post_id'], "p.id", $conds, $cond_params);
-    $this->generate_sql_range_helper($q['mpixels'], "p.width*p.height/1000000.0", $conds, $cond_params);
-    $this->generate_sql_range_helper($q['width'],   "p.width", $conds, $cond_params);
-    $this->generate_sql_range_helper($q['height'],  "p.height", $conds, $cond_params);
-    $this->generate_sql_range_helper($q['score'],   "p.score", $conds, $cond_params);
-    $this->generate_sql_range_helper($q['date'],    "DATE(p.created_at)", $conds, $cond_params);
-    $this->generate_sql_range_helper($q['change'],  "p.change_seq", $conds, $cond_params);
+    self::generate_sql_range_helper($q['post_id'], "p.id", $conds, $cond_params);
+    self::generate_sql_range_helper($q['mpixels'], "p.width*p.height/1000000.0", $conds, $cond_params);
+    self::generate_sql_range_helper($q['width'],   "p.width", $conds, $cond_params);
+    self::generate_sql_range_helper($q['height'],  "p.height", $conds, $cond_params);
+    self::generate_sql_range_helper($q['score'],   "p.score", $conds, $cond_params);
+    self::generate_sql_range_helper($q['date'],    "DATE(p.created_at)", $conds, $cond_params);
+    self::generate_sql_range_helper($q['change'],  "p.change_seq", $conds, $cond_params);
 
     if (is_string($q['md5'])) {
       $conds[] = "p.md5 IN (?)";
@@ -1516,7 +1514,7 @@ class Post extends ActiveRecord {
       $conds[] = 'v.user_id = ?';
       $cond_params[] = $q['vote'][1];
 
-      $this->generate_sql_range_helper($q['vote'][0], "v.score", $conds, $cond_params);
+      self::generate_sql_range_helper($q['vote'][0], "v.score", $conds, $cond_params);
     }
 
     if (is_string($q['user'])) {
@@ -1566,7 +1564,7 @@ class Post extends ActiveRecord {
     $tags_index_query = array();
 
     if (!empty($q['include']))
-      $tags_index_query[] = implode(' | ', $this->generate_sql_escape_helper($q['include']));
+      $tags_index_query[] = implode(' | ', self::generate_sql_escape_helper($q['include']));
     
     if (!empty($q['related'])) {
       if (count($q['exclude']) > CONFIG::tag_query_limit) {
@@ -1758,7 +1756,7 @@ class Post extends ActiveRecord {
       $sql .= " OFFSET ".(string)$options['offset'];
     
     $params = array_merge($join_params,$cond_params);
-    $sql = $this->sanitize_sql($sql, $params);
+    $sql = parent::sanitize_sql($sql, $params);
     
     return $sql;
   }
@@ -1766,14 +1764,14 @@ class Post extends ActiveRecord {
   /** }
    * Api methods? {
    */
-  function batch_api_data($posts, $options = array()) {
+  static function batch_api_data($posts, $options = array()) {
     foreach ($posts as $post)
       $result['posts'][] = $post->api_attributes();
     
     if (empty($options['exclude_pools'])) {
-      $pool_posts = Pool::$_->get_pool_posts_from_posts($posts);
+      $pool_posts = Pool::get_pool_posts_from_posts($posts);
       // $pools = ;
-      $result['pools'] = obj2array(Pool::$_->get_pools_from_pool_posts($pool_posts));
+      $result['pools'] = obj2array(Pool::get_pools_from_pool_posts($pool_posts));
       
       foreach ($pool_posts as $pp) {
         $result['pool_posts'][] = $pp->api_attributes();
@@ -1781,7 +1779,7 @@ class Post extends ActiveRecord {
     }
     
     if (empty($options['exclude_tags']))
-      $result['tags'] = Tag::$_->batch_get_tag_types_for_posts($posts);
+      $result['tags'] = Tag::batch_get_tag_types_for_posts($posts);
     
     if (!empty($options['user']))
       $user = $options['user'];
@@ -1794,6 +1792,7 @@ class Post extends ActiveRecord {
     # main post data to make it easier to cache API output later.
     if (empty($options['exclude_votes'])) {
       $vote_map = array();
+      
       if (!empty($posts)) {
         foreach ($posts as $p) {
           $post_ids[] = $p->id;
@@ -1801,8 +1800,7 @@ class Post extends ActiveRecord {
         $post_ids = implode(',', $post_ids);
         $sql = sprintf("SELECT v.* FROM post_votes v WHERE v.user_id = %d AND v.post_id IN (%s)", $user->id, $post_ids);
         
-        $votes = PostVotes::$_->collection('find_by_sql', $sql);
-        // $votes = new Collection('PostVotes', 'find_by_sql', $sql);
+        $votes = PostVotes::find_by_sql(array($sql));
         foreach ($votes as $v) {
           $vote_map[$v->post_id] = $v->score;
         }
@@ -1813,18 +1811,14 @@ class Post extends ActiveRecord {
     return $result;
   }
   
-  // function collection_api_attributes($posts) {
-    // return array_map(function($p){return $p->api_attributes;}, (array)$posts);
-  // }
-  
   function api_data() {
     return array(
       'post' => $this,
-      'tags' => Tag::$_->batch_get_tag_types_for_posts(array($this))
+      'tags' => Tag::batch_get_tag_types_for_posts(array($this))
     );
   }
   
-  function filter_api_changes(&$params) {
+  static function filter_api_changes(&$params) {
     // if (is_array($params)) {
     unset($params['frames']);
     unset($params['frames_warehoused']);
@@ -1840,22 +1834,22 @@ class Post extends ActiveRecord {
   
   function recalculate_score() {
     $this->save();
-    DB::update($this->t().' SET score = (SELECT COUNT(*) FROM post_votes WHERE post_id = :post_id AND score > 0) WHERE id = :post_id', array('post_id' => $this->id));
-   
+    DB::update('posts SET score = (SELECT COUNT(*) FROM post_votes WHERE post_id = :post_id AND score > 0) WHERE id = :post_id', array('post_id' => $this->id));
+    
     $this->reload();
   }
   
-  function vote($score, &$user, $options = array()) {
+  function vote($score, $user, $options = array()) {
     $score < CONFIG::vote_record_min && $score = CONFIG::vote_record_min;
     $score > CONFIG::vote_record_max && $score = CONFIG::vote_record_max;
     
     if ($user->is_anonymous)
       return false;
     
-    $vote = PostVotes::$_->find_by_user_id_and_post_id(array($user->id, $this->id));
+    $vote = PostVotes::find_by_user_id_and_post_id(array($user->id, $this->id));
     
     if (!$vote) {
-      $vote = PostVotes::$_->create(array('post_id' => $this->id, 'user_id' => $user->id, 'score' => $score));
+      $vote = PostVotes::create(array('post_id' => $this->id, 'user_id' => $user->id, 'score' => $score));
     }
     
     $vote->update_attributes(array('score' => $score));
@@ -1866,7 +1860,7 @@ class Post extends ActiveRecord {
   }
   
   function voted_by() {
-    $votes_tmp = User::$_->find('all', array('joins' => "JOIN post_votes v ON v.user_id = users.id", 'select' => "users.name, users.id, v.score", 'conditions' => array("v.post_id = ? and v.score > 0", $this->id), 'order' => "v.updated_at DESC"));
+    $votes_tmp = User::find('all', array('joins' => "JOIN post_votes v ON v.user_id = users.id", 'select' => "users.name, users.id, v.score", 'conditions' => array("v.post_id = ? and v.score > 0", $this->id), 'order' => "v.updated_at DESC"));
     
     $votes = array_fill(1, 3, array());
     
@@ -1892,7 +1886,7 @@ class Post extends ActiveRecord {
   /** }
    * Count methods?
    */ 
-  function get_row_count() {
+  static function get_row_count() {
     return DB::select_value("row_count FROM table_data WHERE name = 'posts'");
   }
   

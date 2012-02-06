@@ -1,1 +1,3 @@
-<?php $columns = unserialize(stripslashes('a:2:{s:7:\"user_id\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:3:\"PRI\";}s:4:\"tags\";a:2:{s:4:\"type\";s:4:\"text\";s:3:\"key\";s:0:\"\";}}')) ?>
+<?php $columns = unserialize(stripslashes('a:2:{s:7:\"user_id\";a:1:{s:4:\"type\";s:7:\"int(11)\";}s:4:\"tags\";a:1:{s:4:\"type\";s:4:\"text\";}}'));
+$indexes = unserialize(stripslashes('a:1:{s:3:\"UNI\";a:1:{i:0;s:7:\"user_id\";}}'));
+?>

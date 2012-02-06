@@ -26,12 +26,12 @@
       </ul>      
     </div>
 
-    <?php if (User::$current->is('>=33')) : ?>
+    <?php if (User::is('>=33')) : ?>
       <div>
         <h4>Moderator Tools</h4>
         <ul class="link-page">
           <li><?php echo link_to("&raquo; Invites", "#invites") ?></li>
-          <?php if (User::$current->is('>=40')) : ?>
+          <?php if (User::is('>=40')) : ?>
             <li><?php echo link_to("&raquo; Blocked Users", "#show_blocked_users") ?></li>
           <?php endif ?>
         </ul>

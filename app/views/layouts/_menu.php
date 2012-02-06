@@ -46,10 +46,10 @@
     posts_menu.push({"class_names":["current-menu"],"label":"Popular","dest":"/post/popular_recent"});
     posts_menu.push({"class_names":["current-menu"],"label":"Image&nbsp;Search","dest":"/post/similar"});
     posts_menu.push({"class_names":[],"label":"History","dest":"/history"});
-<?php if(User::$_->is('==50')): ?>
+<?php if(User::is('==50')): ?>
     posts_menu.push({"class_names":["current-menu"],"label":"Import","dest":"/post/import"});
 <?php endif ?>
-<?php if(User::$_->is('>=35')): ?>
+<?php if(User::is('>=35')): ?>
     posts_menu.push({"class_names":["current-menu"],"label":"Moderate","dest":"/post/moderate"});
 
     var posts_flagged = Cookie.get("posts_flagged");
@@ -65,7 +65,7 @@
     comments_menu.push({"class_names":[],"label":"View comments","dest":"/comment"});
     comments_menu.push({"class_names":[],"label":"Search comments","dest":"/comment/search"});
     comments_menu[comments_menu.length-1].func = ShowCommentSearch;
-<?php if(User::$_->is('>=35')): ?>
+<?php if(User::is('>=35')): ?>
     comments_menu.push({"class_names":[],"label":"Moderate","dest":"/comment/moderate"});
 <?php endif ?>
     def.push({"class_names":[],"label":"Comments","html_id":"comments-link","dest":"/comment","name":"comments"});
@@ -99,11 +99,11 @@
     tags_menu.push({"class_names":[],"label":"Popular","dest":"/tag/popular_by_day"});
     tags_menu.push({"class_names":[],"label":"Aliases","dest":"/tag_alias"});
     tags_menu.push({"class_names":[],"label":"Implications","dest":"/tag_implication"});
-<?php if(User::$_->is('>=40')) : ?>
+<?php if(User::is('>=40')) : ?>
     tags_menu.push({"class_names":[],"label":"Mass edit","dest":"/tag/mass_edit"});
 <?php endif ?>
     tags_menu.push({"class_names":[],"label":"Edit","dest":"/tag/edit"});
-<?php if(User::$_->is('==50')) : ?>
+<?php if(User::is('==50')) : ?>
     tags_menu.push({"class_names":[],"label":"Fix count","dest":"/tag/fix_count"});
 <?php endif ?>
     def.push({"class_names":[],"label":"Tags","dest":"/tag?order=date","name":"tags"});

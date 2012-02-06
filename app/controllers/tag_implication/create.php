@@ -1,7 +1,7 @@
 <?php
 required_params('tag_implication');
 
-$ti = TagImplication::$_->blank(array_merge(Request::$params->tag_implication, array('is_pending' => true)));
+$ti = TagImplication::blank(array_merge(Request::$params->tag_implication, array('is_pending' => true)));
 
 if ($ti->save())
   notice("Tag implication created");

@@ -2,7 +2,7 @@
 required_params('id');
 required_params('pool', 'only', 'post');
 
-$pool = Pool::$_->find(Request::$params->id);
+$pool = Pool::find(Request::$params->id);
 
 if (!$pool->can_be_updated_by(User::$current))
   access_denied();

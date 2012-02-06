@@ -20,7 +20,7 @@
       <tfoot>
         <tr>
           <td colspan="4">
-            <?php if (User::$current->is('>=40')) : ?>
+            <?php if (User::is('>=40')) : ?>
               <a href="#" onclick="$$('.pending').each(function(x) {x.checked = true}); return false;">Select pending</a>
               <?php echo submit_tag("Approve") ?> 
             <?php endif ?>
@@ -39,8 +39,8 @@
         <?php foreach ($aliases as $a) : ?>
           <tr class="<?php echo cycle('even', 'odd'); echo $a->is_pending ? ' pending-tag' : null ?>">
             <td><input type="checkbox" name="aliases[<?php echo $a->id ?>]" value="1"<?php echo $a->is_pending ? ' class="pending"' : null ?>></td>
-            <td><?php echo link_to(h($a->name), array('post#index', 'tags' => $a->name)) ?> (<?php $count = Tag::$_->find_post_count_by_name($a->name); echo $count ? $count : 0 ?>)</td>
-            <td><?php echo link_to(h($a->alias_name()), array('post#index', 'tags' => $a->alias_name())) ?> (<?php $post_count = Tag::$_->find_post_count_by_id($a->alias_id); echo $post_count ? $post_count : 0 ?>)</td>
+            <td><?php echo link_to(h($a->name), array('post#index', 'tags' => $a->name)) ?> (<?php $count = Tag::find_post_count_by_name($a->name); echo $count ? $count : 0 ?>)</td>
+            <td><?php echo link_to(h($a->alias_name()), array('post#index', 'tags' => $a->alias_name())) ?> (<?php $post_count = Tag::find_post_count_by_id($a->alias_id); echo $post_count ? $post_count : 0 ?>)</td>
             <td><?php echo h($a->reason) ?></td>
           </tr>
         <?php endforeach ?>        

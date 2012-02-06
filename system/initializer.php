@@ -8,10 +8,10 @@ define('CONFPATH',  ROOT . 'config/');
 define('SYSROOT',   ROOT . 'system/');
 define('ACTVIEW',   SYSROOT . 'action_view/');
 
-require SYSROOT . 'config.php'; 
+require SYSROOT . 'system.php';
+require SYSROOT . 'config/config.php';
 require SYSROOT . 'database/initialize.php';
 require SYSROOT . 'load_functions.php';
-require SYSROOT . 'system.php';
 require SYSROOT . 'request.php';
 require SYSROOT . 'action_controller.php';
 require ACTVIEW . 'action_view.php';
@@ -25,7 +25,7 @@ System::load_files();
 ActionController::start();
 
 # TODO...
-if (SYSCONFIG::show_errors_on_json && Request::$format == 'json') {
+if (System::$conf->show_errors_on_json && Request::$format == 'json') {
   set_error_handler('json_error_handler');
 }
 

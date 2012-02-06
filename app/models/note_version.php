@@ -2,8 +2,7 @@
 belongs_to('author', array('model_name' => 'User'));
 
 class NoteVersion extends ActiveRecord {
-  static $_;
-
+  
   function to_xml($options = array()) {
     // {:created_at => created_at, :updated_at => updated_at, :creator_id => user_id, :x => x, :y => y, :width => width, :height => height, :is_active => is_active, :post_id => post_id, :body => body, :version => version}.to_xml(options.reverse_merge(:root => "note_version"))
   }

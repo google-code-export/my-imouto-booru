@@ -2,7 +2,7 @@
 required_params('username');
 
 // $user = new User('find_by_name', Request::$params->username);
-$user = User::$_->find_by_name(Request::$params->username);
+$user = User::find_by_name(Request::$params->username);
 // vde($user);
 $ret['exists'] = false;
 $ret['name'] = Request::$params->username;
@@ -22,7 +22,7 @@ $ret['no_email'] = empty($user->email);
 
 $pass = isset(Request::$params->password) ? Request::$params->password : "";
 
-$user = User::$_->authenticate(Request::$params->username, $pass);
+$user = User::authenticate(Request::$params->username, $pass);
 
 if(!$user) {
   $ret['response'] = "wrong-password";

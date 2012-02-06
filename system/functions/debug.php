@@ -91,7 +91,7 @@ function system_error_reporting($errno, $errstr, $errfile, $errline){
   echo $e . "<br />\r\n";
   echo $stacktrace;
   
-  if (SYSCONFIG::die_at_error)
+  if (System::$conf->die_at_error)
     exit;
 }
 

@@ -22,7 +22,7 @@
       </td>
 
     </tr>
-    <?php if ($user->level < 20 or $user->level > 33 or User::$_->is('>=40')) : ?>
+    <?php if ($user->level < 20 or $user->level > 33 or User::is('>=40')) : ?>
     <tr>
       <td><strong>Level</strong></td>
       <td>
@@ -43,11 +43,11 @@
 */ ?>
     <tr>
       <td><strong>Posts</strong></td>
-      <td><a href="/post?tags=user%3A<?php echo $user->name ?>"><?php echo Post::$_->count(array('conditions' => array("user_id = ?", $user->id))) ?></a></td>
+      <td><a href="/post?tags=user%3A<?php echo $user->name ?>"><?php echo Post::count(array('conditions' => array("user_id = ?", $user->id))) ?></a></td>
     </tr>
     <tr>
       <td><strong>Deleted Posts</strong></td>
-      <td><a href="/post/deleted_index?user_id=<?php echo $user->id ?>"><?php echo Post::$_->count(array('conditions' => array("status = 'deleted' AND user_id = ?", $user->id))) ?></a></td>
+      <td><a href="/post/deleted_index?user_id=<?php echo $user->id ?>"><?php echo Post::count(array('conditions' => array("status = 'deleted' AND user_id = ?", $user->id))) ?></a></td>
     </tr>
     <tr>
       <th>Votes</th>
@@ -55,7 +55,7 @@
         <span class="stars">
           <?php foreach(range(1, 3) as $i) : ?>
             <a class="star star-<?php echo $i ?>" href="<?php echo url_for('post#index', array('tags' => "vote:>=${i}:{$user->name} order:vote")) ?>">
-              <?php echo PostVotes::$_->count(array('conditions' => array("user_id = {$user->id} AND score = $i"))) ?>
+              <?php echo PostVotes::count(array('conditions' => array("user_id = {$user->id} AND score = $i"))) ?>
               <span class="score-on score-voted score-visible">★</span>
             </a>
           <?php endforeach ?>
@@ -64,7 +64,7 @@
     </tr>
     <tr>
       <td><strong>Comments</strong></td>
-      <td><?php echo link_to(Comment::$_->count(array('conditions' => "user_id = {$user->id}")), array('comment#search', 'query' => "user:{$user->name}")) ?></td>
+      <td><?php echo link_to(Comment::count(array('conditions' => "user_id = {$user->id}")), array('comment#search', 'query' => "user:{$user->name}")) ?></td>
     </tr>
     <tr>
       <td><strong>Edits</strong></td>
@@ -76,7 +76,7 @@
     </tr>
     <tr>
       <td><strong>Note Edits</strong></td>
-      <td><?php echo link_to(NoteVersion::$_->count(array('conditions' => "user_id = {$user->id}"), array('note#history', 'user_id' => $user->id))) ?></td>
+      <td><?php echo link_to(NoteVersion::count(array('conditions' => "user_id = {$user->id}"), array('note#history', 'user_id' => $user->id))) ?></td>
     </tr>
     <tr>
       <td><strong>Wiki Edits</strong></td>
@@ -112,7 +112,7 @@
         (<a href="/user_record?user_id=<?php echo $user->id ?>">add</a>)
       </td>
     </tr>
-    <?php if (User::$current->is('>=40')) : ?>
+    <?php if (User::is('>=40')) : ?>
       <tr>
         <td><strong>IPs</strong></td>
         <td>
@@ -174,10 +174,10 @@
 
 <?php do_content_for("footer") ?>
     <li><a href="/user">List</a></li>
-<?php if (User::$current->is('>=40')) : ?>
+<?php if (User::is('>=40')) : ?>
     <li><a href="/user/block?id=<?php echo $user->id ?>">Ban</a></li>
 <?php endif ?>
-<?php if (User::$current->is('>=35') && $user->is('<=30')) : ?>
+<?php if (User::is('>=35') && $user->level <= 30) : ?>
     <li><a href="/user/invites?name=<?php echo $user->name ?>">Invite</a></li>
 <?php endif ?>
     <li><a href="/dmail/compose?to=<?php echo $user->name ?>">Send Message</a></li>

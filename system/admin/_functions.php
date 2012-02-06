@@ -17,15 +17,26 @@ System::$' . $var_name . ' = ' . write_array($arr) . '
   return $data;
 }
 
-function write_array($arr) {
+function write_array($arr, $semicolon = true) {
   $data = array();
   
-  foreach ($arr as $v)
-    $data[] = "'$v'";
+  foreach ($arr as $k => $v) {
+    if (is_array($v)) {
+      $v = write_array($v, false);
+    } else
+      $v = "'".addslashes($v)."'";
+    
+    if (!is_int($k))
+      $k = "'".addslashes($k)."' => ";
+    else
+      $k = null;
+    
+    $data[] = "$k$v";
+  }
   
-  $data = 'array(
-  ' . implode (",\r\n  ", $data) . '
-);';
+  $data = "array(\r\n  " . implode (",\r\n  ", $data) . "\r\n)";
+  
+  $semicolon && $data .= ';';
   
   return $data;
 }

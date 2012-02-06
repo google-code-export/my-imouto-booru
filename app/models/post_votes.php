@@ -5,7 +5,6 @@ belongs_to('post', array('foreign_key' => 'post_id'));
 belongs_to('user', array('foreign_key' => 'user_id'));
 
 class PostVotes extends ActiveRecord {
-  static $_;
   
   function find_by_ids($user_id, $post_id) {
     $this->find('first', array('conditions' => array("user_id = ? AND post_id = ?", $user_id, $post_id)));

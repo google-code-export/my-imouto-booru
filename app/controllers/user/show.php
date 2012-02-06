@@ -2,16 +2,16 @@
 include_model('comment, note_version');
 
 if (!empty(Request::$params->name))
-  $user = User::$_->find_by_name(Request::$params->name);
+  $user = User::find_by_name(Request::$params->name);
 else
-  $user = User::$_->find(Request::$params->id);
+  $user = User::find(Request::$params->id);
 
 if (!$user)
   die_404();
 else
   set_title($user->id == User::$current->id ? "My Profile" : $user->name . "'s Profile");
 
-if (User::$_->is('>=40')) {
+if (User::is('>=40')) {
   // $user_ips = UserLog.find_by_sql("SELECT ul.ip_addr, ul.created_at FROM user_logs ul WHERE ul.user_id = #{@user.id} ORDER BY ul.created_at DESC")
   // $user_ips.map! { |ul| ul.ip_addr }
   // $user_ips.uniq!

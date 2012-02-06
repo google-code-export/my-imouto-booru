@@ -2,7 +2,7 @@
 required_params('id');
 auto_set_params('reason');
 
-if (!$post = Post::$_->find(Request::$params->id))
+if (!$post = Post::find(Request::$params->id))
   exit_with_status(404);
 
 if (!empty(Request::$params->unflag)) {
@@ -13,7 +13,7 @@ if (!empty(Request::$params->unflag)) {
   if ($post->status != "flagged")
     respond_to_error("Can only unflag flagged posts", array("#show", 'id' => Request::$params->id));
 
-  if (!User::$current->is('>=40') and User::$current->id != $post->flag_detail->user_id)
+  if (!User::is('>=40') and User::$current->id != $post->flag_detail->user_id)
     access_denied();
 
   $post->approve(User::$current->id);
@@ -30,6 +30,6 @@ if (!empty(Request::$params->unflag)) {
 $post->reload();
 
 if (Request::$format == "json" || Request::$format == "xml")
-  $api_data = Post::$_->batch_api_data(array($post));
+  $api_data = Post::batch_api_data(array($post));
 respond_to_success($message, array("#show", 'id' => Request::$params->id), array('api' => $api_data));
 ?>

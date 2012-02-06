@@ -1,7 +1,7 @@
 <?php if ($post->is_flagged()): ?>
   <div class="status-notice">
     This post was flagged for deletion by <?php echo h($post->flag_detail->flagged_by()) ?>. Reason: <?php echo h($post->flag_detail->reason) ?>
-    <?php if(User::$current->is('>=40') || ($post->flag_detail && $post->flag_detail->user_id == User::$current->id)) : ?>
+    <?php if(User::is('>=40') || ($post->flag_detail && $post->flag_detail->user_id == User::$current->id)) : ?>
     (<a href="#" onclick="Post.unflag(<?php echo $post->id ?>, function() { window.location.reload(); });">unflag this post</a>)
     <?php endif ?>
   </div>
@@ -13,7 +13,7 @@
   <div class="status-notice">
     This post was deleted. 
     <?php if($post->flag_detail) : ?>
-      <?php if(User::$current->is('>=40')) : ?>
+      <?php if(User::is('>=40')) : ?>
         By: <a href="/user/show?id=<?php echo $post->flag_detail->user_id ?>"><?php echo $post->flag_detail->flagged_by() ?></a>
       <?php endif ?>
 
@@ -74,7 +74,7 @@
 foreach($pools as $k => &$pool):
   global $pool;
   $pool = $pools->$k;
-  $pp = PoolPost::$_->find('first', array('conditions' => array("pool_id = ? AND post_id = ?", $pool->id, $post->id)));
+  $pp = PoolPost::find('first', array('conditions' => array("pool_id = ? AND post_id = ?", $pool->id, $post->id)));
 ?>
   <?php render_partial("post/show_partials/pool", array('pool', 'pool_post' => $pp)) ?>
 <?php endforeach;// endif ?>

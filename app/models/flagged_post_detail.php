@@ -3,7 +3,6 @@ belongs_to('post');
 belongs_to('user');
 
 class FlaggedPostDetail extends ActiveRecord {
-  static $_;
   
   function _construct() {
     // if ($this->found()) {
@@ -17,7 +16,7 @@ class FlaggedPostDetail extends ActiveRecord {
       if (empty($this->user_id))
         $this->flagged_by = "system";
       else
-        $this->flagged_by = (User::$_->find_name($this->user_id));
+        $this->flagged_by = (User::find_name($this->user_id));
     }
     
     return $this->flagged_by;

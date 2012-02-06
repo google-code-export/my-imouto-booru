@@ -30,7 +30,7 @@ if($post->is_image() && $post->can_be_seen_by()):
 <?php if($post->can_user_delete()): ?>
           <li><a href="/post/delete/<?php echo $post->id ?>">Delete</a></li>
 <?php endif ?>
-<?php if($post->is_deleted() && User::$_->is('>=35')): ?>
+<?php if($post->is_deleted() && User::is('>=35')): ?>
           <li><a href="/post/undelete/<?php echo $post->id ?>">Undelete</a></li>
 <?php endif ?>
 <?php if((!$post->is_flagged() || !$post->is_deleted())): ?>
@@ -41,7 +41,7 @@ if($post->is_image() && $post->can_be_seen_by()):
 <?php endif ?>
           <li id="add-to-favs"><a href="" onclick="Post.vote(<?php echo $post->id ?>, 3); return false;">Add to favorites</a></li>
           <li id="remove-from-favs"><a href="" onclick="Post.vote(<?php echo $post->id ?>, 0); return false;">Remove from Favorites</a></li>
-<?php if($post->is_pending() && User::$_->is('>=35')): ?>
+<?php if($post->is_pending() && User::is('>=35')): ?>
           <li><a href="" onclick="if (confirm('Do you really want to approve this post?')) {Post.approve(<?php echo $post->id ?>)} return false;"></a></li>
 <?php endif ?>
 <?php if(!$post->is_deleted()): ?>

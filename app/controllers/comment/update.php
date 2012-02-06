@@ -1,5 +1,5 @@
 <?php
-if (!$comment = Comment::$_->find(Request::$params->id))
+if (!$comment = Comment::find(Request::$params->id))
   exit;
 
 if (User::$current->has_permission($comment)) {

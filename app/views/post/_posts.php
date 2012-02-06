@@ -13,7 +13,7 @@
 
         <script type="text/javascript">
         
-          Post.register_tags(<?php echo to_json(Tag::$_->batch_get_tag_types_for_posts($posts)) ?>)
+          Post.register_tags(<?php echo to_json(Tag::batch_get_tag_types_for_posts($posts)) ?>)
 
 <?php foreach($posts as $post) : ?>
           Post.register(<?php echo $post->to_json() ?>)

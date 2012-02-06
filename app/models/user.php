@@ -36,7 +36,6 @@ validates(array(
 // m.validates_format_of :language, :with => /^([a-z\-]+)|$/
 // m.validates_format_of :secondary_languages, :with => /^([a-z\-]+(,[a-z\0]+)*)?$/
 class User extends ActiveRecord {
-  static $_;
   static $current;
   
   function _construct() {
@@ -49,40 +48,22 @@ class User extends ActiveRecord {
       // $this->show_samples = false;
   }
   
-  
-
-  
-  // function avatar_post(&$user = null) {
-    // if($user === null)
-      // $user = &User::$current;
-    
-    // return Post::$_->find($user->avatar_post_id);
-  // }
-  
-  // function avatar_url() {
-    // return "/data/avatars/".$this->id.".jpg";
-  // }
-  
-  // static function clear_avatars($post_id) {
-    // DB::update("users SET avatar_post_id = NULL WHERE avatar_post_id = ?", $post_id);
-  // }
-  
-  function authenticate($name, $pass) {
-    return $this->authenticate_hash($name, md5($name.$pass));
+  static function authenticate($name, $pass) {
+    return self::authenticate_hash($name, md5($name.$pass));
   }
   
   function user_info_cookie() {
     return $this->id . ';' . $this->level . ';' . ($this->use_browser ? "1":"0");
   }
 
-  function authenticate_hash($name, $pass) {
-    $user = User::$_->find('first', array('conditions' => array("lower(name) = lower(?) AND password_hash = ?", $name, $pass)));
+  static function authenticate_hash($name, $pass) {
+    $user = parent::find('first', array('conditions' => array("lower(name) = lower(?) AND password_hash = ?", $name, $pass)));
     
     return $user;
   }
   
   function has_permission($record, $foreign_key = 'user_id') {
-    if(self::$current->is('>=40') || $record->$foreign_key == $this->id)
+    if($this->level >= 40 || $record->$foreign_key == $this->id)
       return true;
     else
       return false;
@@ -97,7 +78,7 @@ class User extends ActiveRecord {
     return array_search($this->level, CONFIG::$user_levels);
   }
   
-  function save_cookies($user) {
+  static function save_cookies($user) {
     cookie_put('login', $user->name);
     cookie_put('pass_hash', $user->password_hash);
     $_SESSION[CONFIG::app_name]['user_id'] = $user->id;
@@ -137,8 +118,8 @@ class User extends ActiveRecord {
     // }
   }
   
-  function can_change(&$record, $attribute) {
-    if ($this->is('>=40'))
+  function can_change($record, $attribute) {
+    if (self::is('>=40'))
       return true;
     
     $method = "can_change_${attribute}";
@@ -151,17 +132,15 @@ class User extends ActiveRecord {
       return false;
   }
   
-  function is($comparison) {
-    $current_level = !empty($this->level) ? (int)$this->level : (int)User::$current->level;
-    
+  static function is($comparison) {
+    $current_level = (int)self::$current->level;
     $r = num_compare($current_level, $comparison);
-    
     return $r;
   }
   
   function set_default_blacklisted_tags() {
     // foreach (CONFIG::$default_blacklists as $b)
-    UserBlacklistedTag::$_->create(array('user_id' => $this->id, 'tags' => implode("\r\n", CONFIG::$default_blacklists)));
+    UserBlacklistedTag::create(array('user_id' => $this->id, 'tags' => implode("\r\n", CONFIG::$default_blacklists)));
     // CONFIG["default_blacklists"].each do |b|
       // UserBlacklistedTag.create(:user_id => self.id, :tags => b)
     // end
@@ -284,13 +263,11 @@ class User extends ActiveRecord {
   
   /* Post Methods { */
   function recent_uploaded_posts() {
-    // return new Collection('Post', 'find_by_sql', "SELECT p.* FROM posts p WHERE p.user_id = {$this->id} AND p.status <> 'deleted' ORDER BY p.id DESC LIMIT 6");
-    return Post::$_->collection('find_by_sql', "SELECT p.* FROM posts p WHERE p.user_id = {$this->id} AND p.status <> 'deleted' ORDER BY p.id DESC LIMIT 6");
+    return Post::find_by_sql(array("SELECT p.* FROM posts p WHERE p.user_id = {$this->id} AND p.status <> 'deleted' ORDER BY p.id DESC LIMIT 6"));
   }
 
   function recent_favorite_posts() {
-    // return new Collection('Post', 'find_by_sql', "SELECT p.* FROM posts p, post_votes v WHERE p.id = v.post_id AND v.user_id = {$this->id} AND v.score = 3 AND p.status <> 'deleted' ORDER BY v.updated_at DESC LIMIT 6");
-    return Post::$_->collection('find_by_sql', "SELECT p.* FROM posts p, post_votes v WHERE p.id = v.post_id AND v.user_id = {$this->id} AND v.score = 3 AND p.status <> 'deleted' ORDER BY v.updated_at DESC LIMIT 6");
+    return Post::find_by_sql(array("SELECT p.* FROM posts p, post_votes v WHERE p.id = v.post_id AND v.user_id = {$this->id} AND v.score = 3 AND p.status <> 'deleted' ORDER BY v.updated_at DESC LIMIT 6"));
   }
 
   function favorite_post_count($options = array()) {
@@ -298,7 +275,7 @@ class User extends ActiveRecord {
   }
   
   function post_count() {
-    return Post::$_->count(array('conditions' => array("user_id = ? AND status = 'active'", $id)));
+    return Post::count(array('conditions' => array("user_id = ? AND status = 'active'", $id)));
     // @post_count ||= Post.count(:conditions => ["user_id = ? AND status = 'active'", id])
   }
 
@@ -309,7 +286,9 @@ class User extends ActiveRecord {
     // return Cache.get(key) {
       // Post.count(:conditions => ["user_id = ? AND is_held AND status <> 'deleted'", self.id])
     // }.to_i
-    return Post::$_->count(array('conditions' => array("user_id = ? AND is_held AND status <> 'deleted'", $this->id)));
+    $count = Post::count(array('conditions' => array("user_id = ? AND is_held AND status <> 'deleted'", $this->id)));
+    
+    return $count;
   }
   
   /* } level methods { */
@@ -383,7 +362,7 @@ class User extends ActiveRecord {
   }
   
   function set_avatar($params) {
-    $post = Post::$_->find($params['post_id']);
+    $post = Post::find($params['post_id']);
     if (!$post->can_be_seen_by($this)) {
       $this->record_errors->add('access', "denied");
       return false;

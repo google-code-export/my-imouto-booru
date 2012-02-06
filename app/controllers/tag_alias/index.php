@@ -9,9 +9,9 @@ if (Request::$params->commit == "Search Implications")
 
 if (Request::$params->query) {
   $name = "%" . Request::$params->query . "%";
-  $aliases = TagAlias::$_->collection('find', array('order' => "is_pending DESC, name", 'per_page' => 20, 'conditions' => array("name LIKE ? OR alias_id IN (SELECT id FROM tags WHERE name LIKE ?)", $name, $name), 'page' => Request::$params->page));
+  $aliases = TagAlias::find_all(array('order' => "is_pending DESC, name", 'per_page' => 20, 'conditions' => array("name LIKE ? OR alias_id IN (SELECT id FROM tags WHERE name LIKE ?)", $name, $name), 'page' => Request::$params->page));
 } else
-  $aliases = TagAlias::$_->collection('find', array('order' => "is_pending DESC, name", 'per_page' => 20, 'page' => Request::$params->page));
+  $aliases = TagAlias::find_all(array('order' => "is_pending DESC, name", 'per_page' => 20, 'page' => Request::$params->page));
 
 respond_to_list($aliases);
 

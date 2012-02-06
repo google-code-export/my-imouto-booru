@@ -10,7 +10,7 @@ $split_tags = $tags ? explode(' ', $tags) : array();
 if (count($split_tags) > 6)
   respond_to_error("You can only search up to six tags at once", "#error");
 
-$q = Tag::$_->parse_query($tags);
+$q = Tag::parse_query($tags);
 
 if (!empty(Request::$params->limit))
   $limit = (int)Request::$params->limit;
@@ -33,12 +33,12 @@ set_title('/'.str_replace('_', ' ', $tags));
 
 $tag_suggestions = array();
 // if ($count < 16 && count($split_tags) == 1)
-  // $tag_suggestions = Tag::$_->find_suggestions($tags);
+  // $tag_suggestions = Tag::find_suggestions($tags);
 
 $ambiguous_tags = array();
-// $ambiguous_tags = Tag::$_->select_ambiguous($split_tags);
+// $ambiguous_tags = Tag::select_ambiguous($split_tags);
 
-$searching_pool = (isset($q['pool']) && is_int($q['pool'])) ? Pool::$_->find_by_id($q['pool']) : null;
+$searching_pool = (isset($q['pool']) && is_int($q['pool'])) ? Pool::find_by_id($q['pool']) : null;
 
 $from_api = Request::$format == "json" || Request::$format == "xml";
 
@@ -61,9 +61,9 @@ if (!$from_api) {
 }
 
 $showing_holds_only = !empty($q['show_holds']) && $q['show_holds'] == 'only';
-$sql = Post::$_->generate_sql($q, array('original_query' => $tags, 'from_api' => $from_api, 'order' => "p.id DESC", 'offset' => $offset, 'limit' => $limit));
+$sql = Post::generate_sql($q, array('original_query' => $tags, 'from_api' => $from_api, 'order' => "p.id DESC", 'offset' => $offset, 'limit' => $limit));
 
-$results = Post::$_->collection('Paginate->found_posts', 'find_by_sql', $sql);
+$results = Post::find_by_sql(array($sql), array('calc_rows' => 'found_posts'));
 
 $preload = array();
 // if not from_api then
@@ -100,7 +100,7 @@ switch (Request::$format) {
       return;
     }
 
-    $api_data = Post::$_->batch_api_data($posts, array(
+    $api_data = Post::batch_api_data($posts, array(
       'exclude_tags' => !empty(Request::$params->include_tags) ? false : true,
       'exclude_votes' => !empty(Request::$params->include_votes) ? false : true,
       'exclude_pools' => !empty(Request::$params->include_pools) ? false : true,
@@ -116,9 +116,9 @@ switch (Request::$format) {
 }
 
 if (!empty($split_tags))
-  $tags = Tag::$_->parse_query($tags);
+  $tags = Tag::parse_query($tags);
 else {
-  $tags['include'] = Tag::$_->count_by_period(gmd_math('sub', '1D'), gmd(), array('limit' => 25, 'exclude_types' => CONFIG::$exclude_from_tag_sidebar));
+  $tags['include'] = Tag::count_by_period(gmd_math('sub', '1D'), gmd(), array('limit' => 25, 'exclude_types' => CONFIG::$exclude_from_tag_sidebar));
 }
 
 calc_pages();

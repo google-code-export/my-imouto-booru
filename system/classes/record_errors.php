@@ -12,7 +12,7 @@ class RecordErrors {
   }
   
   function on($attribute) {
-    if (!$this->$attribute)
+    if (!isset($this->$attribute))
       return null;
     elseif (count($this->$attribute) == 1)
       return current($this->$attribute);

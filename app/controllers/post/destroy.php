@@ -2,7 +2,7 @@
 if (Request::$params->commit == "Cancel")
   redirect_to('#show', array('id' => Request::$params->id));
 
-$post = Post::$_->find(Request::$params->id);
+$post = Post::find(Request::$params->id);
 
 if (!$post)
   respond_to_error('Post doesn\'t exist', array('#show', array('id' => Request::$params->id)));
@@ -17,7 +17,7 @@ if ($post->status == "deleted") {
   } else
     respond_to_success("Post already deleted", array("#delete", array('id' => Request::$params->id)));
 } else {
-  Post::$_->static_destroy_with_reason($post->id, Request::$params->reason, User::$current);
+  Post::static_destroy_with_reason($post->id, Request::$params->reason, User::$current);
   
   # Destroy in one request.
   if (!empty(Request::$params->destroy)) {

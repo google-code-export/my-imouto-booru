@@ -81,10 +81,8 @@ function render_partial($part, $locals = array()) {
   }
 }
 
-function exit_with_status($status, $message = null) {
-  ActionView::set_http_status($status);
-  echo $message;
-  exit;
+function exit_with_status($status, $message = '') {
+  ActionView::exit_with_status($status, $message);
 }
 
 function layout($layout) {

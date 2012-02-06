@@ -15,7 +15,7 @@
       <span class="translated-notice">translated</span>
     <?php endif ?>
     <?php if ($comment->user and $comment->user->has_avatar()) : ?>
-      <?php Comment::$_->avatar_post_reg($comment->user->avatar_post) ?>
+      <?php Comment::avatar_post_reg($comment->user->avatar_post) ?>
       <div class="comment-avatar-container"> <?php echo avatar($comment->user, $comment->id) ?> </div>
     <?php endif ?>
   </div>

@@ -1,7 +1,7 @@
 <?php
 required_params('tag_alias');
 // vde(Request::$params->tag_alias);
-$ta = TagAlias::$_->blank(Request::$params->tag_alias);
+$ta = TagAlias::blank(Request::$params->tag_alias);
 
 // vde($ta);
 

@@ -1,8 +1,6 @@
 <?php
-ob_start();
-
 if (Request::$format == 'html') {
-  header('Content-Type: text/html; charset=utf-8');
+  header('Content-Type: text/html; charset=UTF-8');
   !ActionView::$render && ActionView::$render = VIEWPATH . Request::$controller . '/' . Request::$action . '.php';
   
 } elseif (Request::$format == 'xml') {
@@ -10,10 +8,10 @@ if (Request::$format == 'html') {
   !ActionView::$render && ActionView::$render = VIEWPATH . Request::$controller . '/' . Request::$action . '.xml.php';
 }
 
-
+ob_start();
 # TODO: change die for a nicer way to exit.
 if (false === include ActionView::$render) {
-  if (SYSCONFIG::system_error_reporting)
+  if (System::$conf->system_error_reporting)
     die('Unable to find View file.');
   else
     exit_with_status(500);
@@ -21,9 +19,9 @@ if (false === include ActionView::$render) {
 
 ActionView::$content_for['layout'] = ob_get_clean();
 
-if (!empty(ActionView::$layout)) {
+if (Request::$format == 'html' && !empty(ActionView::$layout)) {
   if (!include LAYOUTS . ActionView::$layout . '.php') {
-    if (SYSCONFIG::system_error_reporting)
+    if (System::$conf->system_error_reporting)
       die('Unable to load Layout.');
     else
       exit_with_status(500);

@@ -5,7 +5,6 @@ belongs_to('next_post', array('model_name' => "Post", 'foreign_key' => "next_pos
 belongs_to('prev_post', array('model_name' => "Post", 'foreign_key' => "prev_post_id"));
 
 class PoolPost extends ActiveRecord {
-  static $_;
   
   function _construct() {
     $this->active = true;
@@ -32,8 +31,8 @@ class PoolPost extends ActiveRecord {
     return $user->has_permission($pool); # only the owner can change is_public
   }
 
-  function can_change(&$user, $attribute = null) {
-    if ($user->is('>=20'))
+  function can_change($user, $attribute = null) {
+    if ($user->level >= 20)
       return true;
     elseif ($this->is_public || $user->has_permission($this))
       return true;

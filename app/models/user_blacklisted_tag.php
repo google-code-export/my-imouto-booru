@@ -1,3 +1,3 @@
 <?php
-class UserBlacklistedTag extends ActiveRecord {static $_;}
+class UserBlacklistedTag extends ActiveRecord {}
 ?>

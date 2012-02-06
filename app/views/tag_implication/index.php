@@ -19,7 +19,7 @@
     <tfoot>
       <tr>
         <td colspan="4">
-          <?php if (User::$current->is('>=40')) : ?>
+          <?php if (User::is('>=40')) : ?>
             <input type="button" onclick="$$('.pending').each(function(x) {x.checked = true});" value="Select pending" />
             <?php echo submit_tag("Approve") ?> 
           <?php endif ?>

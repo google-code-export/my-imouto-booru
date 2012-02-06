@@ -35,13 +35,13 @@ if (Request::$post) {
     'tempfile_name'   => Request::$params->post['filename']
   ));
   
-  $post = Post::$_->create(Request::$params->post);
+  $post = Post::create(Request::$params->post);
   
   if ($post->record_errors->blank()) {
     $status = 'Posted';
     
   } elseif ($post->record_errors->invalid('md5')) {
-    $post = Post::$_->find_by_md5($post->md5);
+    $post = Post::find_by_md5($post->md5);
     $post->status = 'flagged';
     $dupe = true;
     $status = 'Already exists';
@@ -70,7 +70,7 @@ if (Request::$post) {
     closedir($fh);
   }
 
-  $pools = Pool::$_->find_all_name_by_is_active(1);
+  $pools = Pool::find_all_name_by_is_active(1);
   
   if ($pools) {
     $pool_list = '<datalist id="pool_list">';

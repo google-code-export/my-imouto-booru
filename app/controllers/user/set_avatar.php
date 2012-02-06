@@ -3,7 +3,7 @@ required_params('id');
 
 $user = User::$current;
 if (!empty(Request::$params->user_id)) {
-  $user = User::$_->find(Request::$params->user_id);
+  $user = User::find(Request::$params->user_id);
   if (!$user)
     respond_to_error("Not found", "#index", array('status' => 404));
 }
@@ -22,7 +22,7 @@ if (!$user->is_anonymous && Request::$params->id && Request::$params->id == $use
   $old = Request::$params;
 
 $params = Request::$params;
-$post = Post::$_->find(Request::$params->id);
+$post = Post::find(Request::$params->id);
 
 if (!$post)
   exit_with_status(400);

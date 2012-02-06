@@ -1,1 +1,3 @@
-<?php $columns = unserialize(stripslashes('a:5:{s:7:\"user_id\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:3:\"MUL\";}s:6:\"reason\";a:2:{s:4:\"type\";s:4:\"text\";s:3:\"key\";s:0:\"\";}s:10:\"expires_at\";a:2:{s:4:\"type\";s:8:\"datetime\";s:3:\"key\";s:0:\"\";}s:9:\"banned_by\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:0:\"\";}s:9:\"old_level\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:0:\"\";}}')) ?>
+<?php $columns = unserialize(stripslashes('a:5:{s:7:\"user_id\";a:1:{s:4:\"type\";s:7:\"int(11)\";}s:6:\"reason\";a:1:{s:4:\"type\";s:4:\"text\";}s:10:\"expires_at\";a:1:{s:4:\"type\";s:8:\"datetime\";}s:9:\"banned_by\";a:1:{s:4:\"type\";s:7:\"int(11)\";}s:9:\"old_level\";a:1:{s:4:\"type\";s:7:\"int(11)\";}}'));
+$indexes = unserialize(stripslashes('a:0:{}'));
+?>

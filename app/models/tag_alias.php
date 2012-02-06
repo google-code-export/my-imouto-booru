@@ -3,7 +3,6 @@ $table_name = 'tag_aliases';
 before('create', 'normalize, validate_uniqueness, generate_alias_id');
 
 class TagAlias extends ActiveRecord {
-  static $_;
   
   # Strips out any illegal characters and makes sure the name is lowercase.
   function normalize() {
@@ -36,8 +35,8 @@ class TagAlias extends ActiveRecord {
   }
   
   function alias($name) {
-    $alias_tag = Tag::$_->find_or_create_by_name($name);
-    $tag = Tag::$_->find_or_create_by_name($this->name);
+    $alias_tag = Tag::find_or_create_by_name($name);
+    $tag = Tag::find_or_create_by_name($this->name);
     
     if ($alias_tag->tag_type != $tag->tag_type)
       $alias_tag->update_attribute('tag_type', $tag->tag_type);
@@ -45,18 +44,18 @@ class TagAlias extends ActiveRecord {
     $this->alias_id = $alias_tag->id;
   }
   
-  function to_aliased($tags) {
+  static function to_aliased($tags) {
     check_array($tags);
     $aliased_tags = array();
     foreach ($tags as $tag_name)
-      $aliased_tags[] = $this->to_aliased_helper($tag_name);
+      $aliased_tags[] = self::to_aliased_helper($tag_name);
     
     return $aliased_tags;
   }
   
-  function to_aliased_helper($tag_name) {
+  static function to_aliased_helper($tag_name) {
     # TODO: add memcached support
-    $tag = $this->find('first', array('select' => "tags.name AS name", 'joins' => "JOIN tags ON tags.id = tag_aliases.alias_id", 'conditions' => array("tag_aliases.name = ? AND tag_aliases.is_pending = FALSE", $tag_name)));
+    $tag = self::find_first(array('select' => "tags.name AS name", 'joins' => "JOIN tags ON tags.id = tag_aliases.alias_id", 'conditions' => array("tag_aliases.name = ? AND tag_aliases.is_pending = FALSE", $tag_name)));
     return isset($tag['name']) ? $tag['name'] : $tag_name;
   }
   
@@ -64,14 +63,14 @@ class TagAlias extends ActiveRecord {
     if (isset($this->alias_name))
       return $this->alias_name;
     
-    $name = Tag::$_->find_name(array('conditions' => array('id = ?', $this->alias_id)));
+    $name = Tag::find_name(array('conditions' => array('id = ?', $this->alias_id)));
     $this->alias_name = $name;
     // vde($name);
     return $this->alias_name;
   }
   
   function alias_tag() {
-    return Tag::$_->find_or_create_by_name($this->name);
+    return Tag::find_or_create_by_name($this->name);
   }
   
   # Destroys the alias and sends a message to the alias's creator.

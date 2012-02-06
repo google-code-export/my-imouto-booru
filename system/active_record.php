@@ -12,7 +12,8 @@ class ActiveRecord {
   # Allowing data to be null to create empty models.
   final function __construct($data = null, $params = array()) {
     
-    if (property_exists($this, 'is_collection')) {
+    // if (property_exists($this, 'is_collection')) {
+    if ($this->cn() == 'collection') {
       $model_name = $params['model_name'];
       unset($params['model_name']);
       
@@ -20,7 +21,7 @@ class ActiveRecord {
     }
     
     if (!$data) {
-      if (property_exists($this, 'is_collection'))
+      if ($this->cn() == 'collection')
         $this->call_custom_construct($data);
         
       return false;
@@ -28,23 +29,11 @@ class ActiveRecord {
     
     if ($this->cn() != 'collection') {
       $this->set_model_current_data($data);
-      $this->set_models_new_data($data);
+      $this->add_attributes($data);
     }
     
     if (empty($params['prevent_construct']))
       $this->call_custom_construct($data);
-  }
-  
-  function blank($data = array()) {
-    $cn = get_class($this);
-    $model = new $cn;
-    
-    $model->empty_model = true;
-    
-    if (!$model->add_attributes($data))
-      return false;
-    
-    return $model;
   }
   
   /**
@@ -61,7 +50,7 @@ class ActiveRecord {
       return false;
     
     foreach ($attrs as $attr => $v) {
-      if ($attr == 'empty_model' || ($this->model_data() && $this->model_data()->assoc_exists($attr)))
+      if (in_array($attr, ApplicationModel::$protected_props) || (self::model_data() && self::model_data()->assoc_exists($attr)))
         continue;
       
       $on_change_method = 'on_' . $attr . '_change';
@@ -73,323 +62,20 @@ class ActiveRecord {
     return true;
   }
   
-  function create_from_array($data) {
-    if (!is_array($data))
-      return false;
-    
-    $model = $this->get_empty_model();
-    
-    foreach ($data as $k => $v)
-      $model->$k = $v;
-    return $model;
-  }
-  
-  private function get_empty_model() {
-    $mn = $this->cn(false);
-    return new $mn;
-  }
-  
-  # In case the model has no keycolumns, we need a way to find it if saving it.
-  private function set_model_current_data(&$data) {
-    if (!$this->model_data() || $this->model_data()->tables->get_keycolumns())
-      return;
-    
-    $this->current_model_data = array();
-    
-    foreach ($data as $key => $val) {
-      $this->current_model_data[$key] = $val;
-    }
-  }
-  
-  private function set_models_new_data(&$data) {
-    if ($data) {
-      foreach($data as $key => $val)
-        $this->$key = $val;
-    }
-  }
-  
-  # Allowing $data = null for create()
-  # TODO: if data is null and $this->is_collection, throw an error.
-  private function call_custom_construct(&$data = null) {
-    if (!method_exists($this, '_construct'))
-      return;
-    
-    # Passing data to _construct is needed for Collection.
-    if (property_exists($this, 'is_collection'))
-      $this->_construct($data);
-    else
-      $this->_construct();
-  }
-  
-  function __call($n, $o) {
-    
-    switch ($n) {
-      /**
-       * find_name_by_id
-       *
-       * 'by_' would be used as "conditions" param for SQL creation. If 'by_' is specified in the
-       * function name and it's larger than 1, then:
-       *  - the values for the conditions can be passed as find_by_user_id_and_name(array($user_id, $name))
-       *  - the 'conditions' array in the options must be filled with the values for the conditions,
-       *    e.g. find_by_name_and_created_at(array('conditions' => array($name, $created_at)));
-       * if it's just one condition, a single value may be passed: find_by_name($name);
-       *
-       * When doing find_name, a single value will be returned.
-       * When doing find_name_and_id, a row will be returned.
-       * To return all the rows found, do find_name('all');
-       */
-      case is_int(strpos($n, 'find_')):
-        $n = substr($n, 5);
-        
-        $params = $user_params = array();
-        $select_type = null;
-        
-        if (strpos($n, 'first') === 0) {
-          $select_type = 'first';
-          $n = substr($n, 5);
-        } elseif (strpos($n, 'last') === 0) {
-          $select_type = 'last';
-          $n = substr($n, 4);
-        } elseif (strpos($n, 'all') === 0) {
-          $select_type = 'all';
-          $n = substr($n, 3);
-        }
-        
-        strpos($n, '_') === 0 && $n = substr($n, 1);
-        
-        if (isset($o[0]) && ($o[0] == 'first' || $o[0] == 'last' || $o[0] == 'all'))
-          $select_type = array_shift($o);
-        elseif (!$select_type)
-          $select_type = 'first';
-        
-        if (is_indexed_arr($o))
-          $user_params = array_shift($o);
-        
-        check_array($user_params);
-        
-        if (is_int(strpos($n, 'by_'))) {
-          $by = substr($n, strpos($n, 'by_'));
-          $n = str_replace($by, '', $n);
-          $by = explode('_and_', substr($by, 3));
-          foreach ($by as &$b)
-            $b .= ' = ?';
-          $by = implode(' AND ', $by);
-          
-          $params['conditions'] = array_merge(array($by), $user_params);
-        }
-        
-        if ($n) {
-          $n = trim($n, '_');
-          if (!substr_count($n, '_and_'))
-            $params['return_value'] = $n;
-          
-          $params['select'] = str_replace('_and_', ', ', trim($n, '_'));
-        }
-        
-        $params = array_merge($params, $user_params);
-        
-        $data = $this->find($select_type, $params);
-        
-        return $data;
-      break;
-      
-      # To check if an attribute has changed upon save();
-      case (is_int(strpos($n, '_changed')) && (strlen($n) - strpos($n, '_changed')) == 8) :
-        $attribute = str_replace('_changed', '', $n);
-        return array_key_exists($attribute, $this->changed_attributes);
-      break;
-      
-      # To check what an attribute was before save() or update_attributes();
-      case ((strlen($n) - strpos($n, '_was')) == 4) :
-        $attribute = str_replace('_was', '', $n);
-        
-        if (!array_key_exists($attribute, $this->changed_attributes))
-          return;
-        
-        return $this->changed_attributes[$attribute];
-      break;
-    }
-    
-    if (method_exists($this, '_call'))
-      return $this->_call($n, $o);
-  }
-  
-  #TODO: improve this function
-  protected function sanitize_sql($query, $args) {
-    check_array($args);
-    if ( !empty($args) ) {
-      foreach ($args as $key => $val) {
-        if (is_string($key)) {
-          $keys[] = "/:$key/";
-          $lmt = -1;
-        } else {
-          $keys[] = '/[?]/';
-          $lmt = 1;
-        }
-        $args[$key] = "'$val'";
-      }
-      $query = preg_replace($keys, $args, $query, $lmt);
-    }
-    
-    return "$query";
-  }
-  
-  function __get($prop) {
-    if (method_exists($this, '_is_collection'))
-      return;
-    
-    if ($this->model_data() && $this->model_data()->assoc_exists($prop)) {
-      return $this->load_association($prop);
-    }
-    
-    if ($prop == 'record_errors') {
-      $this->record_errors = new RecordErrors;
-      return $this->record_errors;
-    }
-    
-    if (method_exists($this, '_get'))
-      return $this->_get($prop);
-  }
-  
-  function maximum($column) {
-    return DB::select_value('MAX(' . $column . ') FROM ' . $this->t());
-  }
-  
-  function minimum($column) {
-    return DB::select_value('MIN(' . $column . ') FROM ' . $this->t());
-  }
-  
-  function bare() {
-    $attrs = array();
-    $protected = array('current_model_data', 'record_errors', 'changed_attributes');
-    foreach ($this as $name => $val) {
-      if (in_array($name, $protected))
-        continue;
-      $attrs[$name] = $val;
-    }
-    return $attrs;
-  }
-  
-  function attributes() {
-    $attrs = (array)$this;
-    
-    $protected = array('current_model_data', 'record_errors', 'changed_attributes');
-    
-    foreach ($protected as $p) {
-      unset($attrs[$p]);
-    }
-    
-    return $attrs;
-  }
-  
-  protected function load_association($prop) {
-    # Load model in case it's not been loaded.
-    $this->model_data()->load_assoc_model($prop);
-    
-    $assoc_function = $this->model_data()->assocs->$prop->type . '_do';
-    $this->$assoc_function($prop);
-    return $this->$prop;
-  }
-  
-  /**
-   * for now it receives parameters as seen on Post::update_has_children()
-   */
-  function exists($query, $params = null) {
-    if (is_int($query))
-      $where = ' ' . $this->t() . '.id = '.$query;
-    else
-      $where = $this->sanitize_sql($query, $params);
-    
-    return DB::exists($this->t().' WHERE '.$where);
-  }
-  
-  /**
-   * Table name
-   *
-   * @return string: Name of the table for the model.
-   */
-  function t() {
-    // return isset($this->t) ? $this->t : System::$models->{$this->cn()}->table;
-    return isset($this->t) ? $this->t : $this->model_data()->table_name;
-  }
-  
-  /**
-   * Get class name.
-   *
-   * Returns the name of the class.
-   */
-  function cn($lower = true) {
-    return $lower ? strtolower(get_class($this)) : get_class($this);
-  }
-  
-  # Model File Name
-  function fn() {
-    return ApplicationModel::modelname_to_filename($this->cn(false));
-  }
-  
-  /**
-   * Check time column
-   *
-   * Called by save() and create(), checks if time $column
-   * exists and automatically sets a value to it.
-   */
-  private function check_time_column($column, &$d) {
-    if (!$this->column_exists($column))
-      return;
-    
-    $type = $this->model_data()->tables->get_type($column);
-    
-    if ($type == 'date' || $type == 'datetime' || $type == 'year' || $type == 'timestamp')
-      $d[] = $time = gmd();
-    elseif ($type == 'time')
-      $d[] = $time = gmd('H:i:s');
-    
-    else
-      return;
-    
-    $this->$column = $time;
-    
-    return true;
-  }
-  
-  private function check_data_uniqueness($prop, $prop_value) {
-    $where = array("`$prop` = :prop");
-    
-    $keys['prop'] = $prop_value;
-    
-    if (!$this->is_empty_model()) {
-      $keys = $this->get_model_keydata();
-      foreach ($keys as $k => $v)
-        $where[] = "`$k` != :$k";
-    }
-    
-    $where = implode(' AND ', $where);
-    $result = DB::exists($this->t()." WHERE $where", $keys) ? false : true;
-    
-    return $result;
-  }
-  
-  function model_data() {
-    if (empty(Application::$models->{$this->cn()}))
-      return false;
-    
-    return Application::$models->{$this->cn()};
-  }
-  
   # TODO: incomplete function.
   private function validate_data($data = null, $action) {
     # TODO: $data could be removed and be always $this.
     if (!$data)
-      $data = &$this;
+      $data = $this;
     else
       $data = array2obj($data);
     
     $this->run_callbacks('before_validation');
     $error = false;
     
-    if ($this->model_data()->has_validations()) {
+    if (self::model_data()->has_validations()) {
     
-      foreach ($this->model_data()->get_validations() as $model_property => $model_validations) {
+      foreach (self::model_data()->get_validations() as $model_property => $model_validations) {
         
         foreach ($model_validations as $prop => $opts) {
           check_array($opts);
@@ -458,6 +144,10 @@ class ActiveRecord {
             break;
             
             case 'uniqueness':
+              if ($action != 'create') {
+                $validation_result = true;
+                continue;
+              }
               !isset($opts['message']) && $opts['message'] = 'must be unique.';
               $validation_result = $this->check_data_uniqueness($model_property, $data->$model_property);
             break;
@@ -501,47 +191,315 @@ class ActiveRecord {
     
     return true;
   }
+
   
-  // private function parse_validation_options(&$data, &$prop, &$opts) {
-    // foreach ($opts as $opt => $params) {
-      // switch ($opt) {
-        // case 'numericality':
-          // switch ($params) {
-            // case ($params === true && ctype_digit($this->$prop)):
-              // return true;
-            // break;
-            
-            // case (
-          // }
-          # Checking if $prop is a whole number.
-          // if ($params === true && ctype_digit($data->$prop))
-            // return true;
-          
-          // elseif (is_string($params)) {
-            // $op = compare_num($data->$prop, $params);
-            // if ($op !== null)
-              // return $op;
-          // }
-          
-        // break;
-      // }
-    // }
-  // }
-  
-  function empty_record($data) {
-    foreach ($data as $key => $v) {
-      $this->$key = $v;
-    }
+  # In case the model has no keycolumns, we need a way to find it if saving it.
+  private function set_model_current_data($data) {
+    if (!self::model_data() || self::model_data()->table->get_indexes())
+      return;
     
-    $this->set_empty_model();
+    $this->current_model_data = array();
+    
+    foreach ($data as $key => $val) {
+      $this->current_model_data[$key] = $val;
+    }
   }
   
-  function set_empty_model() {
-    $this->empty_model = true;
+  function attributes() {
+    $attrs = (array)$this;
+    foreach (ApplicationModel::$protected_props as $p) {
+      unset($attrs[$p]);
+    }
+    
+    return $attrs;
+  }
+  
+  protected function load_association($prop) {
+    # Load model in case it's not been loaded.
+    self::model_data()->load_assoc_model($prop);
+    
+    $assoc_function = self::model_data()->assocs->$prop->type . '_do';
+    $this->$assoc_function($prop);
+    return $this->$prop;
+  }
+  
+  # Allowing $data = null for create()
+  # TODO: if data is null and $this->is_collection, throw an error.
+  private function call_custom_construct($data = null) {
+    if (!method_exists($this, '_construct'))
+      return;
+    
+    # Passing data to _construct is needed for Collection.
+    if ($this->cn() == 'collection')
+      $this->_construct($data);
+    else
+      $this->_construct();
+  }
+  
+  final function __call($func, $args) {
+    switch ($func) {
+      # To check if an attribute has changed upon save();
+      case (is_int(strpos($func, '_changed')) && (strlen($func) - strpos($func, '_changed')) == 8) :
+        $attribute = str_replace('_changed', '', $func);
+        return array_key_exists($attribute, $this->changed_attributes);
+      break;
+      
+      # To check what an attribute was before save() or update_attributes();
+      case ((strlen($func) - strpos($func, '_was')) == 4) :
+        $attribute = str_replace('_was', '', $func);
+        
+        if (!array_key_exists($attribute, $this->changed_attributes))
+          return;
+        
+        return $this->changed_attributes[$attribute];
+      break;
+    }
+  }
+  
+  final function __get($prop) {
+    if (get_class($this) == 'Collection')
+      return;
+    
+    if (self::model_data() && self::model_data()->assoc_exists($prop)) {
+      return $this->load_association($prop);
+    }
+    
+    if ($prop == 'record_errors') {
+      $this->record_errors = new RecordErrors;
+      return $this->record_errors;
+    }
+    
+    if (method_exists($this, 'set_' . $prop)) {
+      $this->$prop = $this->{'set_' . $prop}();
+      return $this->$prop;
+    }
+    
+    if (method_exists($this, '_get'))
+      return $this->_get($prop);
+  }
+  
+  static function blank($data = array()) {
+    $cn = self::cn();
+    $model = new $cn;
+    
+    $model->empty_model = true;
+    
+    if (!$model->add_attributes($data))
+      return false;
+    
+    return $model;
+  }
+  
+  static function create_from_array($data) {
+    if (!is_array($data))
+      return false;
+    
+    $model = self::get_empty_model();
+    
+    $model->add_attributes($data);
+    
+    // foreach ($data as $k => $v)
+      // $model->$k = $v;
+    return $model;
+  }
+  
+  static private function get_empty_model() {
+    $mn = self::cn(false);
+    return new $mn;
+  }
+  
+  /**
+   * Table name
+   *
+   * @return string: Name of the table for the model.
+   */
+  static function t() {
+    return self::model_data()->table_name;
+    // return isset($this->t) ? $this->t : System::$models->{$this->cn()}->table;
+    // return isset($this->t) ? $this->t : 
+  }
+  
+  /**
+   * Get class name.
+   *
+   * Returns the name of the class.
+   */
+  static function cn($lower = true) {
+    return $lower ? strtolower(get_called_class()) : get_called_class();;
+  }
+    
+  final static function __callStatic($func, $args) {
+    // if ($func == 'find_by_post_id_and_user_id')
+      // vd('aa');
+    switch ($func) {
+      /**
+       * find_name_by_id
+       *
+       * 'by_' would be used as "conditions" param for SQL creation. If 'by_' is specified in the
+       * function name and it's larger than 1, then:
+       *  - the values for the conditions can be passed as find_by_user_id_and_name(array($user_id, $name))
+       *  - the 'conditions' array in the options must be filled with the values for the conditions,
+       *    e.g. find_by_name_and_created_at(array('conditions' => array($name, $created_at)));
+       * if it's just one condition, a single value may be passed: find_by_name($name);
+       *
+       * When doing find_name, a single value will be returned.
+       * When doing find_name_and_id, a row will be returned.
+       * To return all the rows found, do find_name('all');
+       */
+      case is_int(strpos($func, 'find_')):
+        $func = substr($func, 5);
+        
+        $params = $user_params = array();
+        $select_type = null;
+        
+        if (strpos($func, 'first') === 0) {
+          $select_type = 'first';
+          $func = substr($func, 5);
+        } elseif (strpos($func, 'last') === 0) {
+          $select_type = 'last';
+          $func = substr($func, 4);
+        } elseif (strpos($func, 'all') === 0) {
+          $select_type = 'all';
+          $func = substr($func, 3);
+        }
+        
+        strpos($func, '_') === 0 && $func = substr($func, 1);
+        
+        if (isset($args[0]) && ($args[0] == 'first' || $args[0] == 'last' || $args[0] == 'all'))
+          $select_type = array_shift($args);
+        elseif (!$select_type)
+          $select_type = 'first';
+        
+        if (is_indexed_arr($args))
+          $user_params = array_shift($args);
+        
+        check_array($user_params);
+        
+        if (is_int(strpos($func, 'by_'))) {
+          $by = substr($func, strpos($func, 'by_'));
+          $func = str_replace($by, '', $func);
+          $by = explode('_and_', substr($by, 3));
+          foreach ($by as &$b)
+            $b .= ' = ?';
+          $by = implode(' AND ', $by);
+          
+          $params['conditions'] = array_merge(array($by), $user_params);
+        }
+        
+        if ($func) {
+          $func = trim($func, '_');
+          if (!substr_count($func, '_and_'))
+            $params['return_value'] = $func;
+          
+          $params['select'] = str_replace('_and_', ', ', trim($func, '_'));
+        }
+        
+        $params = array_merge($params, $user_params);
+        
+        $data = self::find($select_type, $params);
+        // vd($data);
+        return $data;
+      break;
+    }
+    
+    if (method_exists(get_called_class(), '_callStatic'))
+      return static::_callStatic($func, $args);
+  }
+  
+  #TODO: improve this function
+  static protected function sanitize_sql($query, $args) {
+    check_array($args);
+    if ( !empty($args) ) {
+      foreach ($args as $key => $val) {
+        if (is_string($key)) {
+          $keys[] = "/:$key/";
+          $lmt = -1;
+        } else {
+          $keys[] = '/[?]/';
+          $lmt = 1;
+        }
+        $args[$key] = "'$val'";
+      }
+      $query = preg_replace($keys, $args, $query, $lmt);
+    }
+    
+    return "$query";
+  }
+  
+  static function maximum($column) {
+    return DB::select_value('MAX(' . $column . ') FROM ' . self::t());
+  }
+  
+  static function minimum($column) {
+    return DB::select_value('MIN(' . $column . ') FROM ' . self::t());
+  }
+  
+  /**
+   * for now it receives parameters as seen on Post::update_has_children()
+   */
+  static function exists($query, $params = null) {
+    if (is_int($query))
+      $where = ' ' . self::t() . '.id = '.$query;
+    else
+      $where = self::sanitize_sql($query, $params);
+    
+    return DB::exists(self::t().' WHERE '.$where);
+  }
+  
+  /**
+   * Check time column
+   *
+   * Called by save() and create(), checks if time $column
+   * exists and automatically sets a value to it.
+   */
+  private function check_time_column($column, &$d) {
+    if (!$this->column_exists($column))
+      return;
+    
+    $type = self::model_data()->table->get_type($column);
+    
+    if ($type == 'date' || $type == 'datetime' || $type == 'year' || $type == 'timestamp')
+      $d[] = $time = gmd();
+    elseif ($type == 'time')
+      $d[] = $time = gmd('H:i:s');
+    
+    else
+      return;
+    
+    $this->$column = $time;
+    
+    return true;
+  }
+  
+  private function check_data_uniqueness($prop, $prop_value) {
+    $where = array("`$prop` = :prop");
+    
+    $keys['prop'] = $prop_value;
+    
+    if (!$this->is_empty_model()) {
+      $model_keys = $this->get_model_keydata();
+      foreach ($model_keys as $k => $v)
+        $where[] = "`$k` != :$k";
+      $keys = array_merge($model_keys, $keys);
+    }
+    
+    $where = implode(' AND ', $where);
+    $sql = self::t()." WHERE $where";
+    
+    $result = DB::exists($sql, $keys) ? false : true;
+    
+    return $result;
+  }
+  
+  static function model_data() {
+    if (empty(Application::$models->{self::cn()}))
+      return false;
+    
+    return Application::$models->{self::cn()};
   }
   
   function column_exists($column_name) {
-    return $this->model_data()->tables->exists($column_name);
+    return self::model_data()->table->exists($column_name);
   }
   
   function is_empty_model() {
@@ -550,22 +508,25 @@ class ActiveRecord {
   
   # If no data is passed, it's assumed this method is being called from save
   # to create the current object, otherwise it's a Model class creating a new model.
-  function create($data = null) {
-    if ($data) {
-      $cn = get_class($this);
-      
-      if (!$new_model = $this->blank($data))
-        return false;
-      
-      if (!$new_model->run_callbacks('before_save'))
-        return false;
-      
-      if ($new_model->create())
-        $new_model->run_callbacks('after_save');
-      
-      return $new_model;
-    }
+  final static function create($data) {
+    // if ($data) {
+    $cn = self::cn();
+    // $cn = get_class($this);
     
+    if (!$new_model = self::blank($data))
+      return false;
+    
+    if (!$new_model->run_callbacks('before_save'))
+      return false;
+    
+    if ($new_model->create_do())
+      $new_model->run_callbacks('after_save');
+    
+    return $new_model;
+    // }
+  }
+  
+  final function create_do() {
     if (!$this->run_callbacks('before_validation_on_create'))
       return false;
     
@@ -603,17 +564,17 @@ class ActiveRecord {
     $values_marks = implode(', ', array_fill(0, (count($values_names)), '?'));
     $values_names = implode(', ', $values_names);
     
-    $sql = $this->t().' ('.$values_names.') VALUES ('.$values_marks.')';
+    $sql = self::t().' ('.$values_names.') VALUES ('.$values_marks.')';
     
     array_unshift($values, $sql);
     
     $id = call_user_func_array('DB::insert', $values);
     
-    $primary_key = $this->get_table_keycolumns('pri');
+    $primary_key = $this->get_table_indexes('PRI');
     
     if ($primary_key && count($primary_key) == 1) {
       if (!$id) {
-        $this->record_errors->add_to_base('There was a MySQL Error');
+        $this->record_errors->add_to_base('There was a MySQL Error - Couldn\'t retrieve new PRI KEY');
         return false;
       }
       
@@ -646,20 +607,20 @@ class ActiveRecord {
       check_array($keys);
       // $keys = array_combine(array_fill(0, count($ids), 'id'), $ids);
       
-      $w = ' '.$this->t().'.`id` IN (??) ';
+      $w = ' '.self::t().'.`id` IN (??) ';
       
     } else {
       if (!$keys = $this->get_model_keydata())
         return false;
       
       foreach (array_keys($keys) as $k)
-        $w[] = $this->t().".`$k` = ?";
+        $w[] = self::t().".`$k` = ?";
       
       $w = implode(' AND ', $w);
     }
     
     // DB::delete(array_values($keys));
-    call_user_func_array('DB::delete', array_merge(array($this->t().' WHERE '.$w), array_values($keys)));
+    call_user_func_array('DB::delete', array_merge(array(self::t().' WHERE '.$w), array_values($keys)));
     
     foreach ($this as $p => $v)
       unset($this->$p);
@@ -680,7 +641,7 @@ class ActiveRecord {
     
     $w = implode(' AND ', $w);
     
-    call_user_func_array('DB::delete', array_merge(array($this->t().' WHERE '.$w), array_values($keys)));
+    call_user_func_array('DB::delete', array_merge(array(self::t().' WHERE '.$w), array_values($keys)));
     
     $this->run_callbacks('after_destroy');
     
@@ -691,14 +652,17 @@ class ActiveRecord {
     return $this->current_model_data;
   }
   
-  private function get_table_keycolumns($type = null) {
-    if ($type == 'pri')
-      return $this->model_data()->tables->get_primary_key();
+  private function get_table_indexes($type = null) {
+    return self::model_data()->table->get_indexes($type);
+    // if ($type == 'pri')
+      // return self::model_data()->table->get_primary_key();
+    // elseif ($type == 'id')
+      // return self::model_data()->table->get_id_key();
     
-    $keys = $this->model_data()->tables->get_keycolumns();
+    // $keys = self::model_data()->table->get_indexes();
     
-    if (!$type)
-      return $keys;
+    // if (!$type)
+    // return $keys;
   }
   
   /**
@@ -709,18 +673,17 @@ class ActiveRecord {
    * a column_name => column_value array.
    */
   private function get_model_keydata() {
-    $key_cols = $this->get_table_keycolumns();
+    $key_cols = $this->get_table_indexes();
     
-    $keys = array();
     if(!$key_cols) {
       return $this->get_old_model_data();
     }
     
     foreach ($key_cols as $k) {
-      $keys[$k] = isset($this->$k) ? $this->$k : null;
+      $data[$k] = isset($this->$k) ? $this->$k : null;
     }
     
-    return $keys;
+    return $data;
   }
   
   private function throw_exception($function, $message) {
@@ -731,19 +694,41 @@ class ActiveRecord {
     if (!$primary_keys = $this->get_model_keydata())
       $this->throw_exception('get_current_data', 'Current keydata cannot be found for model '.get_class($this));
     
-    $find = 'find_by_'.implode('_and_', array_keys($primary_keys));
+    $conds_sql = array();
     
-    $params = array();
+    foreach (array_keys($primary_keys) as $k)
+      $conds_sql[] = "`$k` = ?";
+    
+    $conds_sql = implode(' AND ', $conds_sql);
+    // $find = 'find_by_'.implode('_and_', array_keys($primary_keys));
+    // $conds = array_map(function($k) {
+      // return 
+    // }
+    // $params['conditions'] = array(
+      // 'user_id = ?'
+    // );
+    
+    // $params = array();
     foreach ($primary_keys as $val) {
-      $params[] = $val;
+      $conds[] = $val;
     }
-    if (count($params) > 1)
-      $params = array($params);
     
-    $current = call_user_func_array(array($this, $find), $params);
+    array_unshift($conds, $conds_sql);
+    // vde($conds);
     
+    $params['conditions'] = $conds;
+    // $params = array('conditions' => array_merge($params);
+    
+    // if (count($params) > 1)
+      // $params = array($params);
+    // db::show_query(1);
+    // vde($find);
+    // vd('start');
+    // $current = call_user_func_array(array(get_called_class(), $find), $params);
+    $current = self::find($params);
+    // vde($current);
     if (empty($current)) {
-      $this->throw_exception('get_current_data', 'Current data cannot be found '.get_class($this));
+      $this->throw_exception('get_current_data', 'Current data cannot be found for model '.get_class($this));
     }
     
     return $current;
@@ -775,33 +760,32 @@ class ActiveRecord {
   final function save() {
     if (!$this->validate_data(null, 'save'))
       return false;
-    
+    // if (get_class($this) == 'BlogPost')
+      // wlog(vdob($this), 1);
     if (!$this->run_callbacks('before_save'))
       return false;
-    
+    // if (get_class($this) == 'BlogPost')
+      // wlog(vdob($this), 1);
     if ($this->is_empty_model()) {
-      if (!$this->create())
+      if (!$this->create_do())
         return false;
     } else {
       if (!$this->save_do())
         return false;
     }
-    
+    // if (get_class($this) == 'BlogPost')
+      // wlog(vdob($this), 1);
     $this->run_callbacks('after_save');
-   
+    // if (get_class($this) == 'BlogPost')
+      // wlog(vdob($this), 1);
     return true;
   }
   
   private final function save_do() {
     $w = $wd = $q = $d = $this->changed_attributes = array();
     
-    $dt = $this->model_data()->tables->get_names();
+    $dt = self::model_data()->table->get_names();
     
-    // if (!$values)
-      $data = &$this;
-    // else
-      // $data = &$values;
-
     try {
       $current = $this->find_current();
     } catch (ActiveRecordException $e) {
@@ -819,7 +803,7 @@ class ActiveRecord {
     if ($w)
       $has_primary_keys = true;
     
-    foreach ($data as $prop => $val) {
+    foreach ($this as $prop => $val) {
       # Can't update properties that don't have a column in DB, or
       # PRImary keys, or created_at column.
       if (!in_array($prop, $dt) || $prop == 'created_at' || $prop == 'updated_at') {
@@ -831,7 +815,7 @@ class ActiveRecord {
         $wd[] = $current->$prop;
         
       } elseif ($val != $current->$prop) {
-      
+        
         $this->changed_attributes[$prop] = $current->$prop;
         $q[] = "`$prop` = ?";
         $d[] = $val;
@@ -843,7 +827,7 @@ class ActiveRecord {
       $q[] = "`updated_at` = ?";
     
     if (!empty($q)) {
-      $q = $this->t() . " SET " . implode(', ', $q);
+      $q = self::t() . " SET " . implode(', ', $q);
       $w && $q .= ' WHERE '.implode(' AND ', $w);
       
       array_unshift($d, $q);
@@ -865,10 +849,10 @@ class ActiveRecord {
    * @string $cb: The callback event.
    */
   protected function run_callbacks($cb) {
-    if (!$this->model_data()->has_callbacks_for($cb))
+    if (!self::model_data()->has_callbacks_for($cb))
       return true;
     
-    foreach ($this->model_data()->get_callbacks_for($cb) as $func) {
+    foreach (self::model_data()->get_callbacks_for($cb) as $func) {
       if (false === $this->$func())
         return false;
     }
@@ -881,7 +865,7 @@ class ActiveRecord {
    *
    * Pass an id, or an array of ids, and the attributes to update.
    */
-  function update($ids, $attrs) {
+  static function update($ids, $attrs) {
     if (!is_array($ids))
       $ids = array($ids);
     
@@ -927,18 +911,37 @@ class ActiveRecord {
     return $this->update_attributes(array($attr => $value));
   }
   
-  function find_by_sql($sql, $sql_params = array(), $params = array()) {
+  static function find_by_sql($sql_params, $params = array()) {
+    $sql = array_shift($sql_params);
     $data = DB::execute_sql($sql, $sql_params);
     
-    $this->calc_rows();
+    self::check_calc_rows_param($params);
+    
+    self::calc_rows();
     
     if (isset($params['return_array']))
       return $data;
     
-    $params['model_name'] = $this->cn(true);
+    $params['model_name'] = self::cn(true);
     $collection = new Collection($data, $params);
+    !get_object_vars($collection) && $collection = array();
     
+    if (!count($collection))
+      $collection = array();
     return $collection;
+  }
+  
+  static private function check_calc_rows_param($params) {
+    if (isset($params['calc_rows']) || in_array('calc_rows', $params)) {
+      if (array_key_exists('calc_rows', $params)) {
+        $rows_var = $params['calc_rows'];
+      } else {
+        $rows_var = 'found_rows';
+      }
+      
+      self::activate_calc_rows($rows_var);
+      return true;
+    }
   }
   
   function reload() {
@@ -952,7 +955,7 @@ class ActiveRecord {
     foreach($this as $prop => $val)
       unset($this->$prop);
      
-    $this->set_models_new_data($data);
+    $this->add_attributes((array)$data);
     $this->call_custom_construct();
   }
   
@@ -974,15 +977,19 @@ class ActiveRecord {
     return $r;
   }
   
-  function create_sql($params) {
+  final static function create_sql($params) {
     $binding_data = array();
     $calc_rows = null;
     
     $joins = isset($params['joins']) ? ' '.$params['joins'] : null;
     $select = isset($params['select']) ? $params['select'] : '*';
-    $from   = isset($params['from']) ? $params['from'] : $this->t();
+    $from   = isset($params['from']) ? $params['from'] : self::t();
     $order  = isset($params['order']) ? ' ORDER BY '.$params['order'] : null;
     $group  = isset($params['group']) ? ' GROUP BY '.$params['group'] : null;
+    $having = isset($params['having'])? ' HAVING '.$params['having'] : null;
+    
+    if (self::check_calc_rows_param($params))
+      $calc_rows = ' SQL_CALC_FOUND_ROWS';
     
     /**
      * TODO: passing 'per_page' and 'page' param as 'offset' and 'limit'.
@@ -1026,22 +1033,22 @@ class ActiveRecord {
     else
       $limit = null;
     
-    $sql_query = "SELECT$calc_rows $select FROM $from$joins$where$group$order$limit";
+    $sql_query = "SELECT$calc_rows $select FROM $from$joins$where$group$having$order$limit";
     
     $sql = array($sql_query, $binding_data);
     
     return $sql;
   }
   
-  function count($args) {
+  static function count($args) {
     $args['select'] = 'COUNT(*)';
-    $sql = $this->create_sql($args);
+    $sql = self::create_sql($args);
     
     $result = call_user_func_array('DB::execute_sql', $sql);
     return isset($result[0]['COUNT(*)']) ? (int)$result[0]['COUNT(*)'] : false;
   }
   
-  protected function parse_find_params(&$select_type, &$params = array()) {
+  static protected function parse_find_params(&$select_type, &$params = array()) {
     $select_types = array('first', 'last', 'all');
     
     if (is_string($select_type) && in_array($select_type, $select_types)) {
@@ -1058,11 +1065,11 @@ class ActiveRecord {
     
     if (!is_array($params) && (is_int($params) || ctype_digit($params))) {
       # single ID.
-      $params = array('conditions' => array($this->t() . '.id = ?', $params));
+      $params = array('conditions' => array(self::t() . '.id = ?', $params));
       
     } elseif (is_array($params) && is_indexed_arr($params)) {
       # array of IDs.
-      $params = array('conditions' => array($this->t() . '.id IN (??)', $params));
+      $params = array('conditions' => array(self::t() . '.id IN (??)', $params));
     }
     
     check_array($params);
@@ -1085,7 +1092,7 @@ class ActiveRecord {
       $find_params['model_name'] = $params['model_name'];
       unset($params['model_name']);
     } else
-      $find_params['model_name'] = get_class($this);
+      $find_params['model_name'] = self::cn();
     
     if ($find_params['select_type'] == 'all' && isset($params['select'])) {
       $find_params['return_array'] = true;
@@ -1103,24 +1110,24 @@ class ActiveRecord {
     return $find_params;
   }
   
-  function find($select, $params = array()) {
-    $find_params = $this->parse_find_params($select, $params);
+  static function find($select, $params = array()) {
+    $find_params = self::parse_find_params($select, $params);
     
-    $sql = $this->create_sql($params);
+    $sql = self::create_sql($params);
     
-    $data = $this->execute_find_sql($sql);
+    $data = self::execute_find_sql($sql);
     
-    return $this->retrieve_find_result($data, $find_params);
+    return self::retrieve_find_result($data, $find_params);
   }
   
-  protected function execute_find_sql($sql) {
+  static protected function execute_find_sql($sql) {
     $data = call_user_func_array('DB::execute_sql', $sql);
-    $this->calc_rows();
+    self::calc_rows();
     
     return $data;
   }
   
-  protected function retrieve_find_result($data, $find_params) {
+  static protected function retrieve_find_result($data, $find_params) {
     extract($find_params);
     
     if (empty($data)) {
@@ -1169,7 +1176,7 @@ class ActiveRecord {
     $params = obj2array($params);
     
     if(empty($params['foreign_key']))
-      $params['foreign_key'] = substr($this->t(), 0, strlen($this->t())-1).'_id';
+      $params['foreign_key'] = substr(self::t(), 0, strlen(self::t())-1).'_id';
     
     $conds[] = $params['foreign_key']." = ?";
     unset($params['foreign_key']);
@@ -1190,100 +1197,59 @@ class ActiveRecord {
     return $args;
   }
   
-  protected function has_one_do($prop) {
+  private function has_one_do($prop) {
     
-    $params = $this->parse_has($prop, $this->model_data()->assocs->$prop->params);
-    $model_name = $this->model_data()->assocs->$prop->model_name;
+    $params = $this->parse_has($prop, self::model_data()->assocs->$prop->params);
+    $model_name = self::model_data()->assocs->$prop->model_name;
     $params['find_params']['from'] = Application::$models->{strtolower($model_name)}->table_name;
     $params['find_params']['model_name'] = $model_name;
-    $this->$prop = $this->find('first', $params['find_params']);
+    $this->$prop = $model_name::find('first', $params['find_params']);
   }
   
-  protected function has_many_do($prop) {
-    $params = $this->parse_has($prop, $this->model_data()->assocs->$prop->params, 1);
-    $model_name = $this->model_data()->assocs->$prop->model_name;
+  private function has_many_do($prop) {
+    $params = $this->parse_has($prop, self::model_data()->assocs->$prop->params, 1);
+    $model_name = self::model_data()->assocs->$prop->model_name;
     $params['find_params']['from'] = Application::$models->{strtolower($model_name)}->table_name;
     $params['find_params']['model_name'] = $model_name;
-    $this->$prop = $this->collection('find', $params['find_params']);
+    $this->$prop = $model_name::find_all($params['find_params']);
   }
   
-  protected function belongs_to_do($prop) {
-    $params = $this->model_data()->assocs->$prop->params;
+  private function belongs_to_do($prop) {
+    $params = self::model_data()->assocs->$prop->params;
     
-    $model_name = $this->model_data()->assocs->$prop->model_name;
-    $foreign_key = !empty($params->foreign_key) ? $params->foreign_key : $prop.'_id';
-    $this->$prop = $model_name::$_->find($this->$foreign_key);
+    $model_name = self::model_data()->assocs->$prop->model_name;
+    $foreign_key = !empty($params->foreign_key) ? $params->foreign_key : strtolower($model_name).'_id';
+    $this->$prop = $this->$foreign_key ? $model_name::find($this->$foreign_key) : false;
   }
   
   # Sets a property on the model that will let know any
   # function that makes queries that we require FOUND_ROWS().
-  private function activate_calc_rows($var) {
-    $this->calc_rows = $var;
+  static private function activate_calc_rows($var) {
+    static $rows_var;
+    
+    if ($var === 0)
+      $rows_var = null;
+    elseif ($var === 1)
+      return $rows_var;
+    else
+      $rows_var = $var;
   }
   
-  private function calc_rows() {
-    if (!$this->will_calc_rows())
+  static private function calc_rows() {
+    if (!self::activate_calc_rows(1))
       return;
     
-    global ${$this->calc_rows};
+    global ${self::activate_calc_rows(1)};
     
-    ${$this->calc_rows} = DB::found_rows();
+    ${self::activate_calc_rows(1)} = DB::found_rows();
     
-    $this->clear_calc_rows();
-  }
-  
-  private function will_calc_rows() {
-    return !empty($this->calc_rows);
-  }
-  
-  private function clear_calc_rows() {
-    unset($this->calc_rows);
-  }
-  
-  function collection() {
-    $args = func_get_args();
-    
-    // if (!$args)
-      // return false;
-    
-    # If first value is 'Paginate->foo', $foo will be filled with
-    # the FOUND_ROWS() value of the query. This is needed to calculate
-    # pages for paginator.
-    if (is_string($args[0]) && is_int(strpos($args[0], 'Paginate->'))) {
-      $paginate = substr(array_shift($args), 10);
-      
-      $this->activate_calc_rows($paginate);
-      
-      // if (empty($args))
-        // return false;
-      
-      $find_func = array_shift($args);
-    } else {
-      $find_func = array_shift($args);
-    }
-    
-    // if (!$args)
-      // return false;
-    
-    $params = &$args;
-    
-    $func_params = &$params;
-    
-    # TODO: drop error if 3rd param isn't array.
-    if ($find_func == 'find')
-      array_unshift($func_params, 'all');
-    
-    $collection = call_user_func_array(array($this, $find_func), $func_params);
-    
-    return (array)$collection ? $collection : array();
+    #clear calc_rows
+    self::activate_calc_rows(0);
   }
 }
 
 class Collection extends ActiveRecord {
-
-  var $is_collection = true;
-
-  function _construct(&$data = null) {
+  function _construct($data = null) {
     if($data) {
       $i = 0;
       foreach($data as $d) {
@@ -1294,10 +1260,10 @@ class Collection extends ActiveRecord {
     
     unset($this->model_name);
     unset($this->t);
-    unset($this->is_collection);
+    // unset($this->is_collection);
   }
   
-  function _is_collection() {}
+  // function _is_collection() {}
   
   /**
    * Searches objects for a property with a value and returns object.
@@ -1317,7 +1283,7 @@ class Collection extends ActiveRecord {
   function select($opts) {
     $objs = array();
     
-    foreach ($this as &$obj) {
+    foreach ($this as $obj) {
       foreach ($opts as $prop => $cond) {
         if (!$obj->$prop || $obj->$prop != $cond)
           continue;

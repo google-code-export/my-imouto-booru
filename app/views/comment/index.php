@@ -54,7 +54,7 @@
     
     InlineImage.init();
     
-    Post.register_resp(<?php echo to_json(Post::$_->batch_api_data($posts)) ?>);
+    Post.register_resp(<?php echo to_json(Post::batch_api_data($posts)) ?>);
     <?php foreach ($posts as $post) : ?>
       var container = $("comments-for-p<?php echo $post->id ?>").down(".vote-container");
       var widget = new VoteWidget(container);

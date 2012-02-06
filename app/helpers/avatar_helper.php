@@ -26,7 +26,7 @@ function avatar($user, $id, $html_options = array()) {
 }
 
 function avatar_init() {
-  $posts = Comment::$_->avatar_post_reg(true);
+  $posts = Comment::avatar_post_reg(true);
   
   if (!$posts)
     return;

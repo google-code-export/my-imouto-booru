@@ -1,3 +1,3 @@
 <?php
-$comment = Comment::$_->find(Request::$params->id);
+$comment = Comment::find(Request::$params->id);
 ?>

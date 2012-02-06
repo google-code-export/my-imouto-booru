@@ -13,7 +13,7 @@ foreach (Request::$params->post as $post) {
     unset($post['id']);
   }
 
-  $p = Post::$_->find($post_id);
+  $p = Post::find($post_id);
   $ids[] = $p->id;
   
   # If an entry has only an ID, it was just included in the list to receive changes to
@@ -23,7 +23,7 @@ foreach (Request::$params->post as $post) {
 
   $old_parent_id = $p->parent_id;
 
-  Post::$_->filter_api_changes($post);
+  Post::filter_api_changes($post);
   
   if ($p->update_attributes(array_merge($post, array('updater_user_id' => $user_id, 'updater_ip_addr' => Request::$remote_ip)))) {
     // post.merge(:updater_user_id => user_id, :updater_ip_addr => request.remote_ip))
@@ -42,9 +42,9 @@ foreach (Request::$params->post as $post) {
 # updated everything.
 # TODO: need better SQL functions.
 $ids = implode(', ', $ids);
-// $posts = new Collection ('Post', 'find_by_sql', "SELECT * FROM posts WHERE id IN ($ids)");
-$posts = Post::$_->collection('find_by_sql', "SELECT * FROM posts WHERE id IN ($ids)");
-$api_data = Post::$_->batch_api_data($posts);
+
+$posts = Post::find_all(array('conditions' => array("id IN ($ids)")));
+$api_data = Post::batch_api_data($posts);
 
 $url = !empty(Request::$params->url) ? Request::$params->url : '#index';
 // $url = Request::$params->url;

@@ -9,7 +9,7 @@
     </div>
   <?php endif ?>
 
-  <?php if (!User::$current->is('>=20')) : ?>
+  <?php if (!User::is('>=20')) : ?>
     <div style="margin-bottom: 2em;">
       <h4>Upload Guidelines</h4>
       <p>Please keep the following guidelines in mind when uploading something. Consistently violating these rules will result in a ban.</p>
@@ -66,7 +66,7 @@
           <tr>
             <th>
               <label for="post_source">Source</label>
-              <?php if (User::$current->is('<20')) : ?>
+              <?php if (User::is('<20')) : ?>
                 <p>You can enter a URL here to download from a website.</p>
               <?php endif ?>
             </th>
@@ -80,7 +80,7 @@
           <tr>
             <th>
               <label for="post_tags">Tags</label>
-              <?php if (User::$current->is('<20')) : ?>
+              <?php if (User::is('<20')) : ?>
                 <p>Separate tags with spaces. (<?php echo link_to('help', 'help#tags', array('target' => '_blank')) ?>)</p>
               <?php endif ?>
             </th>
@@ -102,7 +102,7 @@
           <tr>
             <th>
               <label for="post_rating_questionable">Rating</label>
-              <?php if (User::$current->is('<20')) : ?>
+              <?php if (User::is('<20')) : ?>
                 <p>Explicit tags include sex, pussy, penis, masturbation, blowjob, etc. (<?php echo link_to('help', 'help#ratings', array('target' => "_blank")) ?>)</p>
               <?php endif ?>
             </th>

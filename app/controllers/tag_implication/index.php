@@ -8,9 +8,9 @@ if (Request::$params->commit == "Search Aliases")
 
 if (Request::$params->query) {
   $name = "%" . Request::$params->query . "%";
-  $implications = TagImplication::$_->collection('Paginate->found_rows', 'find', array('order' => "is_pending DESC, (SELECT name FROM tags WHERE id = tag_implications.predicate_id), (SELECT name FROM tags WHERE id = tag_implications.consequent_id)", 'per_page' => 20, 'conditions' => array("predicate_id IN (SELECT id FROM tags WHERE name LIKE ?) OR consequent_id IN (SELECT id FROM tags WHERE name LIKE ?)", $name, $name), 'page' => Request::$params->page));
+  $implications = TagImplication::find_all(array('calc_rows', 'order' => "is_pending DESC, (SELECT name FROM tags WHERE id = tag_implications.predicate_id), (SELECT name FROM tags WHERE id = tag_implications.consequent_id)", 'per_page' => 20, 'conditions' => array("predicate_id IN (SELECT id FROM tags WHERE name LIKE ?) OR consequent_id IN (SELECT id FROM tags WHERE name LIKE ?)", $name, $name), 'page' => Request::$params->page));
 } else {
-  $implications = TagImplication::$_->collection('Paginate->found_rows', 'find', array('order' => "is_pending DESC, (SELECT name FROM tags WHERE id = tag_implications.predicate_id), (SELECT name FROM tags WHERE id = tag_implications.consequent_id)", 'per_page' => 20, 'page' => Request::$params->page));
+  $implications = TagImplication::find_all(array('calc_rows', 'order' => "is_pending DESC, (SELECT name FROM tags WHERE id = tag_implications.predicate_id), (SELECT name FROM tags WHERE id = tag_implications.consequent_id)", 'per_page' => 20, 'page' => Request::$params->page));
 }
 
 calc_pages();

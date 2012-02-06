@@ -2,9 +2,9 @@
 required_params('note');
 
 if (!empty(Request::$params->note['post_id']))
-  $note = Note::$_->blank(array('post_id' => Request::$params->note['post_id']));
+  $note = Note::blank(array('post_id' => Request::$params->note['post_id']));
 elseif (!empty(Request::$params->id))
-  $note = Note::$_->find(Request::$params->id);
+  $note = Note::find(Request::$params->id);
 
 if (!$note)
   exit_with_status(400);

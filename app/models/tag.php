@@ -2,8 +2,7 @@
 include_model('tag_alias');
 
 class Tag extends ActiveRecord {
-  static $_;
-
+  
   function _construct() {
     $this->tag_type = (int)$this->tag_type;
     $this->type_name = $this->type_name($this->tag_type);
@@ -33,16 +32,16 @@ class Tag extends ActiveRecord {
     return to_json($this->api_attributes());
   }
   
-  function batch_get_tag_types_for_posts(&$posts) {
+  static function batch_get_tag_types_for_posts($posts) {
     $tags = array();
     
-    foreach($posts as &$post) {
+    foreach($posts as $post) {
       $tags = array_merge($tags, $post->parsed_cached_tags);
     }
     return $tags;
   }
   
-  function find_or_create_by_name($name) {
+  static function find_or_create_by_name($name) {
     # Reserve ` as a field separator for tag/summary.
     $name = str_replace(array(' ', '`'), array('_', ''),  ltrim((strtolower($name)), '-~'));
     
@@ -63,7 +62,7 @@ class Tag extends ActiveRecord {
       }
     }
     
-    $tag = Tag::$_->find_by_name($name);
+    $tag = Tag::find_by_name($name);
     
     if ($tag) {
       if ($tag_type)
@@ -73,11 +72,11 @@ class Tag extends ActiveRecord {
       
       return $tag;
     } else {
-      return Tag::$_->create(array('name' => $name, 'tag_type' => $tag_type, 'is_ambiguous' => $ambiguous));
+      return self::create(array('name' => $name, 'tag_type' => $tag_type, 'is_ambiguous' => $ambiguous));
     }
   }
   
-  function count_by_period($start, $stop, $options = array()) {
+  static function count_by_period($start, $stop, $options = array()) {
     $options['limit'] = !isset($options['limit']) || !ctype_digit((string)$options['limit']) ? 50 : (int)$options['limit'];
     !isset($options['exclude_types']) && $options['exclude_types'] = array();
     $sql = '
@@ -92,14 +91,14 @@ class Tag extends ActiveRecord {
       ORDER BY post_count DESC
       LIMIT '.$options['limit'];
     
-    $tag_types_to_show = array_diff(Tag::$_->tag_type_indexes(), $options['exclude_types']);
+    $tag_types_to_show = array_diff(Tag::tag_type_indexes(), $options['exclude_types']);
     
     $counts = DB::select($sql, $start, $stop, $tag_types_to_show);
     // vde($counts);
     return $counts;
   }
   
-  function tag_type_indexes() {
+  static function tag_type_indexes() {
     // $all = array_filter(array_map(function($x) {
       // if (preg_match('/^[A-Z]/', $x))
         // return $x;
@@ -111,11 +110,11 @@ class Tag extends ActiveRecord {
     return $all;
   }
   
-  function find_related($tags) {
+  static function find_related($tags) {
     if (is_array($tags) && count($tags) > 1)
       return $this->calculate_related($tags);
     elseif (($tags = current($tags)) && !empty($tags)) {
-      $t = Tag::$_->find_by_name($tags);
+      $t = Tag::find_by_name($tags);
       if ($t)
         return $t->related();
     }
@@ -190,11 +189,11 @@ class Tag extends ActiveRecord {
   /**
    * Parse methods.
    */
-  function scan_query($query) {
+  static function scan_query($query) {
     return array_unique(array_filter(explode(' ', strtolower($query))));
   }
   
-  function parse_cast($x, $type) {
+  static function parse_cast($x, $type) {
     if ($type == 'int')
       return (int)$x;
     elseif ($type == 'float')
@@ -204,41 +203,41 @@ class Tag extends ActiveRecord {
     }
   }
   
-  function parse_helper($range, $type = 'int') {
+  static function parse_helper($range, $type = 'int') {
     # "1", "0.5", "5.", ".5":
     # (-?(\d+(\.\d*)?|\d*\.\d+))
     // case range
     if (preg_match('/^(.+?)\.\.(.+)/', $range, $m))
-      return array('between', $this->parse_cast($m[1], $type), $this->parse_cast($m[2], $type));
+      return array('between', self::parse_cast($m[1], $type), self::parse_cast($m[2], $type));
 
     elseif (preg_match('/^<=(.+)|^\.\.(.+)/', $range, $m))
-      return array('lte', $this->parse_cast($m[1], $type));
+      return array('lte', self::parse_cast($m[1], $type));
 
     elseif (preg_match('/^<(.+)/', $range, $m))
-      return array('lt', $this->parse_cast($m[1], $type));
+      return array('lt', self::parse_cast($m[1], $type));
 
     elseif (preg_match('/^>=(.+)|^(.+)\.\.$/', $range, $m))
-      return array('gte', $this->parse_cast($m[1], $type));
+      return array('gte', self::parse_cast($m[1], $type));
 
     elseif (preg_match('/^>(.+)/', $range, $m))
-      return array('gt', $this->parse_cast($m[1], $type));
+      return array('gt', self::parse_cast($m[1], $type));
 
     elseif (preg_match('/^(.+?)|(.+)/', $range, $m)) {
       $items = explode(',', $range);
       foreach ($items as &$val) {
-        $val = $this->parse_cast($val, $type);
+        $val = self::parse_cast($val, $type);
         unset($val);
       }
       return array('in', $items);
 
     } else
-      return array('eq', $this->parse_cast($range, $type));
+      return array('eq', self::parse_cast($range, $type));
   }
   
-  function parse_query($query, $options = array()) {
+  static function parse_query($query, $options = array()) {
     $q = array();
 
-    foreach ($this->scan_query($query) as $token) {
+    foreach (self::scan_query($query) as $token) {
       if (preg_match('/^([qse])$/', $token, $m)) {
         $q['rating'] = $m[1];
         continue;
@@ -250,14 +249,14 @@ class Tag extends ActiveRecord {
           $q['user'] = $m[2];
         elseif ($m[1] == "vote") {
           list($vote, $user) = explode(':', $m[2]);
-          if ($user = User::$_->find_by_name($user))
+          if ($user = User::find_by_name($user))
             $user_id = $user->id;
           else
             $user_id = null;
-          $q['vote'] = array($this->parse_helper($vote), $user_id);
+          $q['vote'] = array(self::parse_helper($vote), $user_id);
         } elseif ($m[1] == "-vote") {
         
-          if ($user = User::$_->find_by_name($m[2]))
+          if ($user = User::find_by_name($m[2]))
             $user_id = $user->id;
           else
             $user_id = null;
@@ -276,19 +275,19 @@ class Tag extends ActiveRecord {
         elseif ($m[1] == "rating")
           $q['rating'] = $m[2];
         elseif ($m[1] == "id")
-          $q['post_id'] = $this->parse_helper($m[2]);
+          $q['post_id'] = self::parse_helper($m[2]);
         elseif ($m[1] == "width")
-          $q['width'] = $this->parse_helper($m[2]);
+          $q['width'] = self::parse_helper($m[2]);
         elseif ($m[1] == "height")
-          $q['height'] = $this->parse_helper($m[2]);
+          $q['height'] = self::parse_helper($m[2]);
         elseif ($m[1] == "mpixels")
-          $q['mpixels'] = $this->parse_helper($m[2], 'float');
+          $q['mpixels'] = self::parse_helper($m[2], 'float');
         elseif ($m[1] == "score")
-          $q['score'] = $this->parse_helper($m[2]);
+          $q['score'] = self::parse_helper($m[2]);
         elseif ($m[1] == "source")
           $q['source'] = $m[2].'%';
         elseif ($m[1] == "date")
-          $q['date'] = $this->parse_helper($m[2], 'date');
+          $q['date'] = self::parse_helper($m[2], 'date');
         elseif ($m[1] == "pool") {
           $q['pool'] = $m[2];
           if (preg_match('/^(\d+)$/', $q['pool']))
@@ -316,7 +315,7 @@ class Tag extends ActiveRecord {
         } elseif ($m[1] == "ext")
           $q['ext'] = $m[2];
         elseif ($m[1] == "change")
-          $q['change'] = $this->parse_helper($m[2]);
+          $q['change'] = self::parse_helper($m[2]);
         elseif ($m[1] == "shown")
           $q['shown_in_index'] = ($m[2] == "true");
         elseif ($m[1] == "holds") {
@@ -340,8 +339,7 @@ class Tag extends ActiveRecord {
       elseif ($token[0] == '~' && count($token) > 1)
         $q['include'][] = substr($token, 1);
       elseif (strstr('*', $token)) {
-        // $tags = new Collection($this->cn(false), 'find', array('all', 'conditions' => array("name LIKE ?", $token), 'select' => "name, post_count", 'limit' => 25, 'order' => "post_count DESC"));
-        $tags = Tag::$_->collection('find', array('all', 'conditions' => array("name LIKE ?", $token), 'select' => "name, post_count", 'limit' => 25, 'order' => "post_count DESC"));
+        $tags = Tag::find_all(array('conditions' => array("name LIKE ?", $token), 'select' => "name, post_count", 'limit' => 25, 'order' => "post_count DESC"));
         foreach ($tags as $i)
           $matches = $i->name;
         !$matches && $matches = array('~no_matches~');
@@ -351,43 +349,43 @@ class Tag extends ActiveRecord {
     }
     
     if (!isset($options['skip_aliasing'])) {
-      isset($q['exclude']) && $q['exclude'] = TagAlias::$_->to_aliased($q['exclude']);
-      isset($q['include']) && $q['include'] = TagAlias::$_->to_aliased($q['include']);
-      isset($q['related']) && $q['related'] = TagAlias::$_->to_aliased($q['related']);
+      isset($q['exclude']) && $q['exclude'] = TagAlias::to_aliased($q['exclude']);
+      isset($q['include']) && $q['include'] = TagAlias::to_aliased($q['include']);
+      isset($q['related']) && $q['related'] = TagAlias::to_aliased($q['related']);
     }
     
     return $q;
   }
   
-  function type_name($code) {
+  static function type_name($code) {
     $type = array_search($code, CONFIG::$tag_types);
-    // vd($code, $type);
+    
     if ($type)
       return strtolower($type);
     // else
-      // return $this->type_name_helper($tag_name);
+      // return self::type_name_helper($tag_name);
   }
   
-  function type_name_helper($tag_name) { # :nodoc:
-    $type = Tag::$_->find_tag_type(array('conditions' => array("name = ?", $tag_name)));
+  static function type_name_helper($tag_name) { # :nodoc:
+    $type = Tag::find_tag_type(array('conditions' => array("name = ?", $tag_name)));
     
     if (!$type)
       return "general";
     else
-      return $this->type_name($type);
+      return self::type_name($type);
   }
   
-  function type_code($name) {
+  static function type_code($name) {
     return isset(CONFIG::$tag_types[$name]) ? CONFIG::$tag_types[$name] : null;
   }
   
-  function get_summary_version() {
+  static function get_summary_version() {
     return 1;
     // return Cache.get("$tag_version") do 0 end
   }
   
-  function get_json_summary() {
-    $summary_version = $this->get_summary_version();
+  static function get_json_summary() {
+    $summary_version = self::get_summary_version();
     // key = "tag_summary/#{summary_version}"
 
     // $data = Cache.get(key, 3600) do
@@ -395,13 +393,13 @@ class Tag extends ActiveRecord {
       // data.to_json
     // end
     
-    $data = $this->get_json_summary_no_cache();
+    $data = self::get_json_summary_no_cache();
     $data = to_json($data);
     
     return $data;
   }
   
-  function compact_tags($tags, $max_len) {
+  static function compact_tags($tags, $max_len) {
     if (count($tags) < $max_len)
       return $tags;
 
@@ -427,8 +425,8 @@ class Tag extends ActiveRecord {
     return implode(' ', $split_tags);
   }
   
-  function get_json_summary_no_cache() {
-    $version = Tag::$_->get_summary_version();
+  static function get_json_summary_no_cache() {
+    $version = Tag::get_summary_version();
 
     $tags = DB::select("
       t.id, t.name, t.tag_type, ta.name AS alias

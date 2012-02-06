@@ -3,7 +3,7 @@
       <h2>Nobody here but us chickens!</h2>
 <?php ;else: ?>
 <?php if($post->can_be_seen_by()) : ?>
-      <script type="text/javascript"> Post.register_resp(<?php echo to_json(Post::$_->batch_api_data(array($post))) ?>); </script>
+      <script type="text/javascript"> Post.register_resp(<?php echo to_json(Post::batch_api_data(array($post))) ?>); </script>
 <?php endif ?>
 
 <?php render_partial("post/show_partials/status_notices", 'pools') ?>

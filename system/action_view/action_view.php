@@ -12,19 +12,18 @@ class ActionView {
   # Created to be able to select which file to render in cases like /post/show.php
   static $render = null;
   
-  
-  static function render($type, $value, $params = array()) {
+  static function render($type, $value = null, $params = array()) {
     
     if (is_int(strpos($type, '#'))) {
-    /**
-     * We're rendering a controller/action file.
-     * In this case, $value holds the params, and we only change
-     * the 'render' value and return. We can't call the
-     * render file within this or any function because of variables scope.
-     * 
-     * This is expected to occur in a controller, therefore in the controller one must
-     * also return; after calling this function, so further code won't be executed.
-     */
+      /**
+       * We're rendering a controller/action file.
+       * In this case, $value holds the params, and we only change
+       * the 'render' value and return. We can't call the
+       * render file within this or any function because of variables scope.
+       * 
+       * This is expected to occur in a controller, therefore in the controller one must
+       * also return; after calling this function, so further code won't be executed.
+       */
     
       list($ctrl, $act) = explode('#', parse_url_token($type));
       self::parse_parameters($value);
@@ -89,6 +88,19 @@ class ActionView {
     $status = 'HTTP/1.1 '.$status;
     
     header($status);
+  }
+  
+  static function exit_with_status($status, $message) {
+    self::set_http_status($status);
+    
+    include SYSROOT . 'config/exit_functions.php';
+    
+    if (function_exists('exit_' . $status))
+      call_user_func('exit_' . $status);
+    else
+      echo $message;
+    
+    exit;
   }
 }
 ?>

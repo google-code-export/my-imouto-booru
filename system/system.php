@@ -1,5 +1,7 @@
 <?php
 class System {
+  static $conf;
+  
   /**
    * Models (stdClass)
    *
@@ -87,10 +89,10 @@ class System {
     
     Application::load_files();
     
-    foreach (SYSCONFIG::$autoload_models as $model)
+    foreach (self::$conf->autoload_models as $model)
       Application::$models->$model->load();
     
-    if (SYSCONFIG::system_error_reporting)
+    if (self::$conf->system_error_reporting)
       set_error_handler('system_error_reporting');
     
     self::$models = array2obj(self::$models);
@@ -158,18 +160,6 @@ class System {
       self::$validations_temp = array_merge(self::$validations_temp, array($data => $validations));
   }
   
-  static function controller_exists() {
-    foreach (self::$controllers as $k => $v) {
-      if (!is_int($k) && Request::$controller == $k) {
-        Request::$controller = $v;
-        return true;
-      } elseif (is_int($k) && Request::$controller == $v)
-        return true;
-    }
-    
-    return ActionController::rescue_request();
-  }
-  
   static function get_model_table($model) {
     return self::$models->$model->table;
   }
@@ -182,4 +172,6 @@ class System {
     return SYSROOT . 'database/tables/' . $model_name . '.php';
   }
 }
+
+System::$conf = new stdclass;
 ?>

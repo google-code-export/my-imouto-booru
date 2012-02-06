@@ -19,7 +19,6 @@ if (!empty(Request::$params->query)) {
   // $query = array_map(function($v){return addslashes($v);}, explode(Request::$params->query);
   // $query = Tokenize.tokenize_with_quotes(params[:query] || "")
   $query = explode(' ', addslashes(Request::$params->query));
-  // vde($query);
 
   foreach ($query as &$token) {
     if (preg_match('/^(order|limit|posts):(.+)$/', $token, $m)) {
@@ -30,7 +29,7 @@ if (!empty(Request::$params->query)) {
         $options['per_page'] = min($options['per_page'], 100);
       } elseif ($m[1] == "posts") {
         
-        Post::$_->generate_sql_range_helper(Tag::$_->parse_helper($m[2]), "post_count", $conds, $cond_params);
+        Post::generate_sql_range_helper(Tag::parse_helper($m[2]), "post_count", $conds, $cond_params);
       }
     } else {
       // # TODO: removing ^\w- from token.
@@ -98,8 +97,8 @@ switch ($order) {
     break;
 }
 
-// $pools = new Collection('Paginate->found_pools', 'Pool', 'find', $options);
-$pools = Pool::$_->collection('Paginate->found_pools', 'find', $options);
+$options['calc_rows'] = 'found_pools';
+$pools = Pool::find_all($options);
 
 calc_pages();
 

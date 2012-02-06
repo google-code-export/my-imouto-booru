@@ -22,7 +22,7 @@
     return false
   }
 
-  Post.register_resp(<?php echo to_json(Post::$_->batch_api_data($posts)) ?>);
+  Post.register_resp(<?php echo to_json(Post::batch_api_data($posts)) ?>);
 </script>
 <?php echo render_partial('post/hover') ?>
 
@@ -56,7 +56,7 @@
   <?php if (User::$current->can_change($pool, 'posts')) : ?>
     <li><?php echo link_to("Order", array("#order", 'id' => Request::$params->id)) ?></li>
     <?php // <li>< echo link_to("Import", array("#import", 'id' => Request::$params->id)) ></li> ?>
-    <?php if (User::$current->is('>=33')) : ?>
+    <?php if (User::is('>=33')) : ?>
       <li><?php echo link_to("Copy", array("#copy", 'id' => Request::$params->id)) ?></li>
       <li><?php echo link_to("Transfer&nbsp;post&nbsp;data", array("#transfer_metadata", 'to' => Request::$params->id)) ?></li>
     <?php endif ?>

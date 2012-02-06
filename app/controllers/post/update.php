@@ -2,12 +2,12 @@
 // vde(Request::$params);
 required_params(array('id', 'post'));
 
-if (!$post = Post::$_->find(Request::$params->id)) {
+if (!$post = Post::find(Request::$params->id)) {
   render("#show_empty", array('status' => 404));
   return;
 }
 
-Post::$_->filter_api_changes(Request::$params->post);
+Post::filter_api_changes(Request::$params->post);
 
 Request::$params->post['updater_user_id'] = User::$current->id;
 Request::$params->post['updater_ip_addr'] = Request::$remote_ip;

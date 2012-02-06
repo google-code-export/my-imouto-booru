@@ -1,1 +1,3 @@
-<?php $columns = unserialize(stripslashes('a:5:{s:2:\"id\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:3:\"PRI\";}s:4:\"name\";a:2:{s:4:\"type\";s:11:\"varchar(64)\";s:3:\"key\";s:3:\"MUL\";}s:8:\"alias_id\";a:2:{s:4:\"type\";s:7:\"int(11)\";s:3:\"key\";s:3:\"MUL\";}s:10:\"is_pending\";a:2:{s:4:\"type\";s:10:\"tinyint(1)\";s:3:\"key\";s:0:\"\";}s:6:\"reason\";a:2:{s:4:\"type\";s:12:\"varchar(128)\";s:3:\"key\";s:0:\"\";}}')) ?>
+<?php $columns = unserialize(stripslashes('a:5:{s:2:\"id\";a:1:{s:4:\"type\";s:7:\"int(11)\";}s:4:\"name\";a:1:{s:4:\"type\";s:11:\"varchar(64)\";}s:8:\"alias_id\";a:1:{s:4:\"type\";s:7:\"int(11)\";}s:10:\"is_pending\";a:1:{s:4:\"type\";s:10:\"tinyint(1)\";}s:6:\"reason\";a:1:{s:4:\"type\";s:12:\"varchar(128)\";}}'));
+$indexes = unserialize(stripslashes('a:1:{s:3:\"PRI\";a:1:{i:0;s:2:\"id\";}}'));
+?>

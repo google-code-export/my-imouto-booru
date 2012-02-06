@@ -1,10 +1,10 @@
 <?php
 required_params('user');
 
-$user = User::$_->create(Request::$params->user);
+$user = User::create(Request::$params->user);
 
 if ($user->record_errors->blank()) {
-  User::$_->save_cookies($user);
+  User::save_cookies($user);
 
   $ret = array('exists' => false);
   $ret['name'] = $user->name;

@@ -46,7 +46,7 @@ if (!empty(Request::$params->id)) {
 
 switch (Request::$format) {
   case 'json':
-    $tags = Tag::$_->collection('find',  array('order' => $order, 'limit' => $limit, 'conditions' => array(implode(" AND ", $conds), $cond_params)));
+    $tags = Tag::find_all(array('order' => $order, 'limit' => $limit, 'conditions' => array(implode(" AND ", $conds), $cond_params)));
     render('json', to_json($tags));
   break;
   
@@ -61,7 +61,7 @@ switch (Request::$format) {
       // response.headers["X-Accel-Redirect"] = "#{RAILS_ROOT}/public/tags.xml"
       // render :nothing => true
     // else
-      $tags = Tag::$_->find('all', array('order' => $order, 'limit' => $limit, 'conditions' => array($conds, $cond_params)));
+      $tags = Tag::find('all', array('order' => $order, 'limit' => $limit, 'conditions' => array($conds, $cond_params)));
       render('xml', $tags->to_xml(), array('root', "tags"));
     // end
   break;
@@ -73,9 +73,10 @@ $params = array(
   'order'       => $order,
   'per_page'    => 50,
   'page'        => Request::$params->page,
-  'conditions'  => $cond_params
+  'conditions'  => $cond_params,
+  'calc_rows'   => 'found_posts'
 );
 
-$tags = Tag::$_->collection('Paginate->found_posts', 'find', $params);
+$tags = Tag::find_all($params);
 calc_pages();
 ?>

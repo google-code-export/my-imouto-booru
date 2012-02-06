@@ -1,13 +1,13 @@
 <?php
 required_params('post');
 
-if (User::$current->is('<=20') && Post::$_->count(array('conditions' => array("user_id = ? AND created_at > ? ", User::$current->id, gmd_math('sub', '1D')))) >= CONFIG::member_post_limit) {
+if (User::is('<=20') && Post::count(array('conditions' => array("user_id = ? AND created_at > ? ", User::$current->id, gmd_math('sub', '1D')))) >= CONFIG::member_post_limit) {
   respond_to_error("Daily limit exceeded", "#error", array('status' => 421));
 }
 
 auto_set_params(array('md5'));
 
-$status = User::$current->is('>=30') ? 'active' : 'pending';
+$status = User::is('>=30') ? 'active' : 'pending';
 
 Request::$params->post = array_merge(Request::$params->post, array(
   'updater_user_id' => User::$current->id,
@@ -20,7 +20,7 @@ Request::$params->post = array_merge(Request::$params->post, array(
   'is_upload'       => true
 ));
 
-$post = Post::$_->create(Request::$params->post);
+$post = Post::create(Request::$params->post);
 
 if ($post->record_errors->blank()) {
   
@@ -50,7 +50,7 @@ if ($post->record_errors->blank()) {
     }
   }
 } elseif ($post->record_errors->invalid('md5')) {
-  $p = Post::$_->find_by_md5($post->md5);
+  $p = Post::find_by_md5($post->md5);
   
   if (!empty(Request::$params->post['tags'])) {
     $p->old_tags = $p->tags;

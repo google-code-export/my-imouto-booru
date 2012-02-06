@@ -7,7 +7,7 @@ if (Request::$post) {
     return;
   
   // $pool = new Pool('find', Request::$params->pool_id);
-  $pool = Pool::$_->find(Request::$params->pool_id);
+  $pool = Pool::find(Request::$params->pool_id);
   
   $_SESSION['last_pool_id'] = $pool->id;
   
@@ -31,13 +31,10 @@ if (Request::$post) {
   
 } else {
   if (User::$current->is_anonymous)
-    // $pools = new Collection('Pool', 'find', array('order' => "name", 'conditions' => "is_active = TRUE AND is_public = TRUE"));
-    $pools =  Pool::$_->collection('find', array('order' => "name", 'conditions' => "is_active = TRUE AND is_public = TRUE"));
+    $pools =  Pool::find_all(array('order' => "name", 'conditions' => "is_active = TRUE AND is_public = TRUE"));
   else
-    // $pools = new Collection('Pool', 'find', array('order' => "name", 'conditions' => array("is_active = TRUE AND (is_public = TRUE OR user_id = ?)", User::$current->id)));
-    $pools = Pool::$_->collection('find', array('order' => "name", 'conditions' => array("is_active = TRUE AND (is_public = TRUE OR user_id = ?)", User::$current->id)));
+    $pools = Pool::find_all(array('order' => "name", 'conditions' => array("is_active = TRUE AND (is_public = TRUE OR user_id = ?)", User::$current->id)));
   
-  $post = Post::$_->find(Request::$params->post_id);
-  // $post = new Post('find', Request::$params->post_id);
+  $post = Post::find(Request::$params->post_id);
 }
 ?>

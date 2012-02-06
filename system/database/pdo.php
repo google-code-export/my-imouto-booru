@@ -83,7 +83,7 @@ class DB {
   private static function drop_error($src, $on_state) {
     self::$error = true;
     
-    if (!SYSCONFIG::system_error_reporting)
+    if (!System::$conf->system_error_reporting)
       return;
     
     if (self::$detailed_errors) {

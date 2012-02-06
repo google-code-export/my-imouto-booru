@@ -4,19 +4,17 @@ after('create', 'save_to_record, update_level');
 after('destroy', 'restore_level');
 
 class Ban extends ActiveRecord {
-  static $_;
-  
   function restore_level($user_id, $old_level) {
-    // User::$_->update_attribute_by_id($user_id, array('level' => $old_level));
-    // User::$_->find($user_id).update_attribute(:level, old_level)
+    // User::update_attribute_by_id($user_id, array('level' => $old_level));
+    // User::find($user_id).update_attribute(:level, old_level)
   }
   
   function save_level() {
-    $this->old_level = User::$_->find_level($this->user_id);
+    $this->old_level = User::find_level($this->user_id);
   }
   
   function update_level($user_id) {
-    $user = User::$_->find($user_id);
+    $user = User::find($user_id);
     $user->level = CONFIG::$user_levels['Blocked'];
     $user->save();
   }

@@ -38,7 +38,8 @@ class Request {
     
     if (!empty($args)) {
       $type = array_shift($args);
-      $methods = &$args;
+      $methods = $args;
+      unset($args);
       if (
           (($type == 'only' && in_array(strtolower(self::$method), $methods))
            || ($type == 'except' && !in_array(strtolower(self::$method), $methods)))
@@ -72,7 +73,7 @@ class Request {
       if (!empty($validation)) {
         if (!validate_data($data, $validation))
           return false;
-      } elseif (!$data) {
+      } elseif ($data === null) {
         return false;
       }
     }
@@ -94,9 +95,9 @@ class Request {
     self::$abs_url = &$_SERVER['REQUEST_URI'];
     self::$url = preg_replace('~\?.*~', '', $_SERVER['REQUEST_URI']);
     
-    if (!SYSCONFIG::php_parses_routes) {
+    if (!System::$conf->php_parses_routes) {
       if (empty($_GET['URLtoken'])) {
-        die_404();
+        exit_with_status(404);
         die('Impossible to find route. Bad htaccess config?');
       }
         
@@ -118,15 +119,15 @@ class Request {
       empty(self::$format) && self::$format = 'html';
       
       # Parse GET params from $abs_url
-      
       if (!is_bool(strpos(self::$abs_url, '?'))) {
-        $get_params = urldecode(preg_replace('~^[^\?]+\?~', '', self::$abs_url));
+        $get_params = urldecode(substr(self::$abs_url, strpos(self::$abs_url, '?') + 1));
+        
         $get_params = explode('&', $get_params);
         
         foreach ($get_params as $gp) {
           $param = explode('=', $gp);
           
-          if (empty($param[0]))
+          if (empty($param[0]) || empty($param[1]))
             continue;
           
           $_GET[$param[0]] = $param[1];

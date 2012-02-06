@@ -8,7 +8,7 @@ function tag_links($tags, $options = array()) {
   if(is_string($tags)) {
     $tags = explode(' ', $tags);
     
-    $tags = Tag::$_->find(array('conditions' => array('name in (??)', $tags), 'select' => 'name, tag_type, post_count'));
+    $tags = Tag::find(array('conditions' => array('name in (??)', $tags), 'select' => 'name, tag_type, post_count'));
   
   } elseif(is_array($tags)) {
     
@@ -19,7 +19,7 @@ function tag_links($tags, $options = array()) {
       foreach ($tags as $tag) {
         $t[] = array(
           'name' => current($tag),
-          'type' => Tag::$_->type_name_helper(current($tag)),
+          'type' => Tag::type_name_helper(current($tag)),
           'post_count' => end($tag)
         );
       }
@@ -31,7 +31,7 @@ function tag_links($tags, $options = array()) {
       if (!isset($names[0]) || !is_string($names[0]))
         return;
       
-      $count = Tag::$_->find_post_count_and_name('all', array('conditions' => array('name in (??)', $names), 'order' => 'name', 'return_array' => true));
+      $count = Tag::find_post_count_and_name('all', array('conditions' => array('name in (??)', $names), 'order' => 'name', 'return_array' => true));
       // vde($count);
       $i = 0;
       # There's a possibility a tag was deleted and cached_tags wasn't updated.
@@ -59,11 +59,11 @@ function tag_links($tags, $options = array()) {
     list($name, $type, $count) = array_values($tag);
     
     if (ctype_digit($type))
-      $type = Tag::$_->type_name($type);
+      $type = Tag::type_name($type);
     
     $html .= '<li class="tag-type-'.$type.'"><a href="/tag?name='.$name.'">?</a>';
     
-    if(User::$_->is('>=30')) 
+    if(User::is('>=30')) 
       $html .= ' <a href="/post?tags='.$name.'+'.$tag_query.'">+</a> <a href="/post?tags=-'.$name.$tag_query.'">&ndash;</a>';
     
     $hover = !empty($options['with_hover_highlight']) ? " onmouseover='Post.highlight_posts_with_tag(\"$name\")' onmouseout='Post.highlight_posts_with_tag(null)'" : '';

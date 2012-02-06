@@ -52,13 +52,6 @@ function auto_set_params($params, $default_value = null) {
   }
 }
 
-# TODO: make the 404 file configurable.
-function die_404(){
-  header("HTTP/1.1 404 Not Found");
-  require ROOT.'public/404.html';
-  exit;
-}
-
 /**
  * Shortcut.
  */

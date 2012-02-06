@@ -10,9 +10,9 @@ define('ROOT', str_replace('system/', '', SYSROOT));
 
 require ROOT.'config/config.php';
 
-require SYSROOT.'config.php';
+require SYSROOT.'system.php';
+require SYSROOT.'config/config.php';
 
-/*require ROOT.'config/dbconfig.php';*/
 require SYSROOT.'database/initialize.php';
 require SYSROOT.'load_functions.php';
 require SYSROOT.'admin/_functions.php';
@@ -20,7 +20,7 @@ require SYSROOT.'admin/_functions.php';
 $table_data_file = SYSROOT."data/database_tables.php";
 
 $request_uri = preg_replace('~\?(.*)$~', '', $_SERVER['REQUEST_URI']);
-$action = str_replace(SYSCONFIG::url_base . '/sysadmin/', '', $request_uri);
+$action = str_replace(System::$conf->dir_base . '/sysadmin/', '', $request_uri);
 
 if (!$action)
   $action = 'index';

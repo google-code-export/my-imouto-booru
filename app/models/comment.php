@@ -8,9 +8,8 @@ after('save', 'update_last_commented_at');
 after('destroy', 'update_last_commented_at');
 
 class Comment extends ActiveRecord {
-  static $_;
-
-  function generate_sql($params) {
+  
+  static function generate_sql($params) {
     $params = (array)$params; // because of comment/index
     if (empty($params['post_id']))
       return array();
@@ -60,7 +59,7 @@ class Comment extends ActiveRecord {
    * and that's not nice...
    * Pass a true to return the posts.
    */
-  function avatar_post_reg($post) {
+  static function avatar_post_reg($post) {
     static $comments_avatar_posts;
     
     if (empty($comments_avatar_posts))

@@ -7,7 +7,7 @@
 
   <div class="sidebar">
     <?php render_partial("search") ?>
-    <?php if (User::$current->is('>=20')) : ?>
+    <?php if (User::is('>=20')) : ?>
     <div style="margin-bottom: 1em;" id="mode-box" class="advanced-editing">
       <h5>Mode</h5>
       <form onsubmit="return false;" action="">
@@ -22,7 +22,7 @@
             <option value="lock-rating">Lock rating</option>
             <option value="lock-note">Lock notes</option>
              -->
-            <?php if (User::$current->is('>=40')) : ?>
+            <?php if (User::is('>=40')) : ?>
               <option value="approve">Approve post</option>
             <?php endif ?>
             <option value="flag">Flag post</option>

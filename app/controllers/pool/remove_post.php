@@ -1,8 +1,8 @@
 <?php
 required_params(array('pool_id', 'post_id'));
 
-$pool = Pool::$_->find(Request::$params->pool_id);
-$post = Post::$_->find(Request::$params->post_id);
+$pool = Pool::find(Request::$params->pool_id);
+$post = Post::find(Request::$params->post_id);
 if (!$pool || !$post)
   die_404();
 
@@ -15,7 +15,7 @@ if (Request::$post) {
       access_denied();
   }
   
-  $api_data = Post::$_->batch_api_data(array($post));
+  $api_data = Post::batch_api_data(array($post));
 
   // response.headers["X-Post-Id"] = params[:post_id]
   respond_to_success("Post removed", array('post#show', 'id' => Request::$params->post_id), array('api' => $api_data));

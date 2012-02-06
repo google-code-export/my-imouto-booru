@@ -7,7 +7,6 @@ after('save', 'update_post');
 // acts_as_versioned :order => "updated_at DESC"
 
 class Note extends ActiveRecord {
-  static $_;
   
   function blank_body() {
     if (empty($this->body))
