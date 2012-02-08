@@ -1,1 +1,1 @@
-<?phprequired_params('id');$pool = Pool::find(Request::$params->id);if (!$pool)  die_404();if (Request::$post) {  if ($pool->can_be_updated_by(User::$current)) {    $pool->destroy();    respond_to_success("Pool deleted", "#index");  } else    access_denied();}?>
+<?phprequired_params('id');$pool = Pool::find(Request::$params->id);if (!$pool)  return 404;if (Request::$post) {  if ($pool->can_be_updated_by(User::$current)) {    $pool->destroy();    respond_to_success("Pool deleted", "#index");  } else    access_denied();}?>

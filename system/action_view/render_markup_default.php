@@ -9,12 +9,18 @@ if (Request::$format == 'html') {
 }
 
 ob_start();
+
 # TODO: change die for a nicer way to exit.
-if (false === include ActionView::$render) {
-  if (System::$conf->system_error_reporting)
-    die('Unable to find View file.');
-  else
-    exit_with_status(500);
+if (!empty(ActionView::$params['render_type'])) {
+  if (ActionView::$params['render_type'] == 'inline')
+    echo ActionView::$params['render_value'];
+} else {
+  if (false === include ActionView::$render) {
+    if (System::$conf->system_error_reporting)
+      die('Unable to find View file.');
+    else
+      exit_with_status(500);
+  }
 }
 
 ActionView::$content_for['layout'] = ob_get_clean();

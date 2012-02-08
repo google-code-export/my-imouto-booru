@@ -9,8 +9,6 @@ RewriteCond %{THE_REQUEST} ^[A-Z]+\ ([^\s]+)\ .*
 RewriteCond %1 ^\/myimouto
 RewriteRule (.*) http://127.0.0.1:3000 [R=301,L]
 
-RewriteRule ^sysadmin/ system/admin/_initializer.php [L]
-
 RewriteRule ^data/(jpeg|sample|image)/([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{28})/.*(\.[\w]+)$  public/data/$1/$2/$3/$2$3$4$5 [L]
 
 RewriteRule ^data/preview/([0-9a-f]{2})/([0-9a-f]{2})/([0-9a-f]{32}\.[\w]+)$  public/data/preview/$1/$2/$3 [L]
@@ -19,7 +17,7 @@ RewriteRule ^data/(jpeg|sample|image)/([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{28}\.[
 RewriteRule ^(jpeg|sample|image)/([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{28})/.*(\.[\w]+)$  public/data/$1/$2/$3/$2$3$4$5 [L]
 
 # /public redirections
-RewriteCond %{THE_REQUEST} ^[A-Z]+\ ([^\?]+)(.*)?\ .*
+RewriteCond %{THE_REQUEST} ^[A-Z]+\ ([^\?]+)(.*)?\ .*$
 RewriteCond %{DOCUMENT_ROOT}/public%1 -f
 RewriteRule . public%1 [L]
 
@@ -28,14 +26,14 @@ RewriteRule . public%1 [L]
 #
 # These routes match /config/routes.php
 #
-RewriteCond %{THE_REQUEST} ^[A-Z]+\ (/)(?:[?].*)?\ .*$
-RewriteCond %1 ^/$
-RewriteRule . index.php?URLtoken=static@index [L]
+#RewriteCond %{THE_REQUEST} ^[A-Z]+\ (/)(?:[?].*)?\ .*$
+#RewriteCond %1 ^/$
+#RewriteRule . index.php?URLtoken=static@index [L]
 
-RewriteRule ^post/show/([\d]+)(?:/(.*))?                                index.php?URLtoken=post@show&id=$1&tag_title=$2 [L]
-RewriteRule ^pool/zip/([\d]+)/(.+)                                      index.php?URLtoken=pool@zip&id=$1&filename=$2 [L]
-RewriteRule ^([\w-]+)/([\w-]+)/([\d]+)?(?:\.([\w]+)?)?$                 index.php?URLtoken=$1@$2&id=$3&format=$4 [L]
-RewriteRule ^([\w-]+)((/)(?(3)([\w-]+))?)?(?(2)((\.)(?(6)([\w]+))))?$   index.php?URLtoken=$1@$4&format=$7 [L]
+#RewriteRule ^post/show/(\d+)(?:/(.*))?$                                 index.php?URLtoken=post@show&id=$1&tag_title=$2 [L]
+#RewriteRule ^pool/zip/([\d]+)/(.+)$                                     index.php?URLtoken=pool@zip&id=$1&filename=$2 [L]
+#RewriteRule ^([\w-]+)/([\w-]+)/([\d]+)?(?:\.([\w]+)?)?$                 index.php?URLtoken=$1@$2&id=$3&format=$4 [L]
+#RewriteRule ^([\w-]+)((/)(?(3)([\w-]+))?)?(?(2)((\.)(?(6)([\w]+))))?$   index.php?URLtoken=$1@$4&format=$7 [L]
 # End Routes
 #####
 

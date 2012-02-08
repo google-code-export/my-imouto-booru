@@ -5,7 +5,13 @@ class ActionController {
   static $routes = array();
   static $after_filters = array();
   
-  // var $models = array();
+  static function exit_with_status($status, $msg = null) {
+    if (System::$conf->system_error_reporting) {
+      ActionView::set_http_status($status);
+      die ($msg);
+    } else
+      exit_with_status($status);
+  }
   
   static function run_after_filters() {
     if (empty(self::$after_filters))
@@ -23,25 +29,39 @@ class ActionController {
   static function start() {
     Request::parse_request();
     
-    // try {
-    self::routing();
-    // } catch (Exception $e) {
-      // TODO
-      // error handling, redirect to 404 ?
-      // echo $e->getMessage();
-      // exit;
-    // }
+    try {
+      self::routing();
+    } catch (Exception $e) {
+      self::exit_with_status(500, $e->getMessage());
+    }
     
     
-    if (!self::controller_exists())
-      exit_with_status(404);
+    if (!self::controller_exists()) {
+      if (!self::rescue_controller())
+        exit_with_status(404);
+    }
   }
   
-  static function rescue_request() {
-    return false;
+  static function rescue_controller() {
+    if (true === include SYSROOT . 'config/rescue_controller.php') {
+      return true;
+    } else
+      return false;
+  }
+  
+  static function rescue_action() {
+    if (true === include SYSROOT . 'config/rescue_action.php') {
+      return true;
+    } else
+      return false;
   }
   
   static function controller_exists() {
+    if (Request::$controller === System::$conf->sysadmin_base_url) {
+      include SYSROOT . 'admin/initializer.php';
+      exit;
+    }
+    
     foreach (System::$controllers as $k => $v) {
       if (!is_int($k) && Request::$controller == $k) {
         Request::$controller = $v;
@@ -49,13 +69,11 @@ class ActionController {
       } elseif (is_int($k) && Request::$controller == $v)
         return true;
     }
-    
-    return ActionController::rescue_request();
   }
   
   static function load_controller() {
     if (false === (include CTRLSPATH . Request::$controller . '/_controller.php'))
-      die('Could not load controller file!');
+      self::exit_with_status(500, 'Could not load controller file for '.Request::$controller.'.');
     
     $modelname = strtolower(ApplicationModel::filename_to_modelname(Request::$controller));
     
@@ -78,7 +96,7 @@ class ActionController {
       return;
     }
     
-    $url_route = preg_replace('~^\/~', '', Request::$url);
+    $url_route = ltrim(Request::$url, '/');
     
     $i = 0;
     
@@ -113,7 +131,7 @@ class ActionController {
       
       # Parse variables.
       if (strstr($route, '$')) {
-        preg_match_all('/\$([\w]+)/', $route, $vars);
+        preg_match_all('/\$(\w+)/', $route, $vars);
         $vars = $vars[1];
         if(!empty($requirements)) {
           foreach($vars as $var) {
@@ -123,7 +141,7 @@ class ActionController {
           }
           unset($var);
         }
-        $route = preg_replace('/\$[\w]+/', '([^\/]+)', $route);
+        $route = preg_replace('/\$\w+/', '([^\/]+)', $route);
       }
       
       $route = "/^$route$/";
@@ -131,7 +149,7 @@ class ActionController {
       if(!preg_match($route, $url_route, $match)) {
         if($i == count(self::$routes) - 1) {
           # Find default /controller/action
-          preg_match("/^([\w]+)(\/([\w]+))?/", $url_route, $match);
+          preg_match("/^(\w+)(\/(\w+))?/", $url_route, $match);
         } else {
           $i++;
           continue;
@@ -140,25 +158,25 @@ class ActionController {
       
       if (!empty($vars)) {
         array_shift($match);
-        $c = 0;
+        $i = 0;
         foreach ($vars as $var) {
-          if($c == count($match))
+          if($i == count($match))
             continue;
           if ($var == 'controller') {
-            Request::$controller = $match[$c];
-            $c++;
+            Request::$controller = $match[$i];
+            $i++;
             continue;
           } elseif ($var == 'action') {
-            Request::$action = $match[$c];
-            $c++;
+            Request::$action = $match[$i];
+            $i++;
             continue;
           } elseif ($var == 'format') {
-            Request::$format = $match[$c];
-            $c++;
+            Request::$format = $match[$i];
+            $i++;
             continue;
           }
-          Request::$params->$var = $match[$c];
-          $c++;
+          Request::$params->$var = $match[$i];
+          $i++;
         }
       }
       
@@ -179,7 +197,7 @@ class ActionController {
         Request::$action = 'index';
       
       if (empty(Request::$format)) {
-        if(preg_match('~\.([\w]+)$~', $url_route, $m))
+        if(preg_match('~\.([a-zA-Z0-9]+)$~', $url_route, $m))
           Request::$format = $m[1];
         else
           Request::$format = 'html';

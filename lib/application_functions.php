@@ -1,6 +1,6 @@
 <?php
 function only_user($level) {
-  if (!User::$_->is(">=$level"))
+  if (!User::is(">=$level"))
     access_denied();
 }
 
@@ -8,12 +8,12 @@ function post_only_user($level) {
   if (Request::$method != 'POST')
     return;
   
-  if (User::$_->is("<$level"))
+  if (User::is("<$level"))
     access_denied();
 }
 
-function render_error($record = 'Error!') {
-  render(array('status' => 500, 'layout' => 'bare'));
+function render_error($record) {
+  render('inline', error_messages_for($record), array('status' => 500, 'layout' => 'bare'));
 }
 
 function respond_to_success($notice, $redirect_to_params, $options = array()) {
@@ -77,9 +77,6 @@ function respond_to_list($inst_var) {
   // $inst_var = &$$inst_var_name;
   
   switch (Request::$format) {
-    case 'html':
-    break;
-    
     case 'json':
       if (method_exists($inst_var, 'to_json'))
         render('json', $inst_var->to_json());
@@ -115,7 +112,7 @@ function init_cookies() {
   if(Request::$format != 'html' || Request::$format == 'json')
     return;
   
-  // $forum_posts = ForumPost::$_->find('all', array('order' => "updated_at DESC", 'limit' => 10, 'conditions' => "parent_id IS NULL"));
+  // $forum_posts = ForumPost::find('all', array('order' => "updated_at DESC", 'limit' => 10, 'conditions' => "parent_id IS NULL"));
   // foreach($forum_posts as $fp) {
     // $updated = User::$current->is_anonymous ? false : $fp->updated_at > User::$current->last_forum_topic_read_at;
     // $fp_cookies[] = array($fp->updated_at, $fp->id, $updated, ceil($fp->response_count/30));
@@ -128,11 +125,11 @@ function init_cookies() {
     cookie_put("user_id", (string)User::$current->id);
     cookie_put("user_info", User::$current->user_info_cookie());
     // Cookies::$list["has_mail"] = User::$current->has_mail() ? "1" : "0";
-    // Cookies::$list["forum_updated"] = User::$current->is(">=30") && ForumPost::$_->updated(User::$current) ? "1" : "0";
-    // Cookies::$list["comments_updated"] = User::$current->is(">=30") && Comment::$_->updated(User::$current) ? "1" : "0";
+    cookie_put("forum_updated", User::$current->is(">=30") && ForumPost::updated(User::$current) ? "1" : "0");
+    // Cookies::$list["comments_updated"] = User::$current->is(">=30") && Comment::updated(User::$current) ? "1" : "0";
     
     // if(User::$current->is(">=35")) {
-      // $mod_pending = Post::$_->count(array('conditions' => array("status = 'flagged' OR status = 'pending'")));
+      // $mod_pending = Post::count(array('conditions' => array("status = 'flagged' OR status = 'pending'")));
       // cookies["mod_pending"] = $mod_pending;
     // }
     
@@ -176,7 +173,7 @@ function save_tags_to_cookie() {
   else
     return;
   
-  $tags = TagAlias::$_->to_aliased($tags);
+  $tags = TagAlias::to_aliased($tags);
   if (!empty($_COOKIE["recent_tags"]))
     $tags = array_merge($tags, explode(' ', $_COOKIE["recent_tags"]));
   
@@ -203,23 +200,23 @@ function set_current_user() {
   
   // if(!empty(User::$current)) {
   if (!empty($_SESSION[CONFIG::app_name]['user_id']))
-    User::$current = User::$_->find($_SESSION[CONFIG::app_name]['user_id']);
+    User::$current = User::find($_SESSION[CONFIG::app_name]['user_id']);
     // User::$current = new User('find', $_SESSION[CONFIG::app_name]['user_id']);
   elseif (isset($_COOKIE['login']) && isset($_COOKIE['pass_hash']))
-    User::$current = User::$_->authenticate_hash($_COOKIE['login'], $_COOKIE['pass_hash']);
+    User::$current = User::authenticate_hash($_COOKIE['login'], $_COOKIE['pass_hash']);
   elseif (isset(Request::$params->login) && isset(Request::$params->password_hash))
-    User::$current = User::$_->authenticate(Request::$params->login, Request::$params->password_hash);
+    User::$current = User::authenticate(Request::$params->login, Request::$params->password_hash);
   elseif (isset(Request::$params->user['name']) && isset(Request::$params->user['password']))
-    User::$current = User::$_->authenticate(Request::$params->user['name'], Request::$params->user['password']);
+    User::$current = User::authenticate(Request::$params->user['name'], Request::$params->user['password']);
   // vde(User::$current);
   if(User::$current) {
     # TODO:
     // if(User::$current->is_blocked && User::$current->ban && User::$current->ban->expires_at < gmd()) {
       // User::$current->update_attribute(array('level'->CONFIG["starting_level"]));
-      // Ban::$_->destroy_all("user_id = #{@current_user.id}")
+      // Ban::destroy_all("user_id = #{@current_user.id}")
     // }
   } else
-    User::$current = User::$_->create_from_array($AnonymousUser);
+    User::$current = User::create_from_array($AnonymousUser);
     // User::$current = new User('from_array', $AnonymousUser);
   // vde(User::$current);
 }

@@ -44,7 +44,7 @@ function write_array($arr, $semicolon = true) {
 function to_index($notice = null) {
   if ($notice)
     $notice = "?n=$notice";
-  header("Location: /sysadmin/$notice");
+  header("Location: /".System::$conf->sysadmin_base_url."$notice");
   exit;
 }
 
@@ -80,5 +80,20 @@ function delete_files($dir) {
       continue;
     unlink($dir.$f);
   }
+}
+
+function write_script_log($file_name) {
+  $script_log_file = SYSROOT . 'admin/scripts/log.php';
+  
+  $script_log = file_get_contents($script_log_file);
+  
+  if (preg_match("/$file_name/", $script_log)) {
+    $script_log = preg_replace("/'$file_name' => '[\d:-\s]+'/", "'$file_name' => '".gmdate('Y-m-d H:i:s')."'", $script_log);
+  } else {
+    $script_log = str_replace(');', "  '$file_name' => '".gmdate('Y-m-d H:i:s')."',
+);", $script_log);
+  }
+  
+  file_put_contents($script_log_file, $script_log);
 }
 ?>

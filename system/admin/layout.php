@@ -23,7 +23,7 @@
 </head>
 <body>
 <?php if (!empty($_GET['n'])) : ?>
-  <div id="notice"><?php echo $_GET['n'] ?></div>
+  <div id="notice"><?php echo urldecode($_GET['n']) ?></div>
 <?php endif ?>
 
 <?php echo $body ?>

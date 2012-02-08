@@ -50,31 +50,30 @@ function format_text($text, $options = array()) {
   return DText::parse($text);
 }
 
-// def format_inline(inline, num, id, preview_html=nil)
-  // if inline.inline_images.empty? then
-    // return ""
-  // end
+function format_inline($inline, $num, $id, $preview_html = null) {
+  if (!$inline->inline_images)
+    return "";
 
-  // url = inline.inline_images.first.preview_url
-  // if not preview_html
-    // preview_html = %{<img src="#{url}">}
-  // end
-  // id_text = "inline-%s-%i" % [id, num]
-  // block = %{
-    // <div class="inline-image" id="#{id_text}">
-      // <div class="inline-thumb" style="display: inline;">
-      // #{preview_html}
-      // </div>
-      // <div class="expanded-image" style="display: none;">
-        // <div class="expanded-image-ui"></div>
-        // <span class="main-inline-image"></span>
-      // </div>
-    // </div>
-  // }
-  // inline_id = "inline-%s-%i" % [id, num]
-  // script = 'InlineImage.register("%s", %s);' % [inline_id, inline.to_json]
-  // return block, script, inline_id
-// end
+  $url = $inline->inline_images->first->preview_url();
+  if (!$preview_html)
+    $preview_html = '<img src="'.$url.'">';
+  
+  $id_text = "inline-$id-$num";
+  $block = '
+    <div class="inline-image" id="'.$id_text.'">
+      <div class="inline-thumb" style="display: inline;">
+      '.$preview_html.'
+      </div>
+      <div class="expanded-image" style="display: none;">
+        <div class="expanded-image-ui"></div>
+        <span class="main-inline-image"></span>
+      </div>
+    </div>
+  ';
+  $inline_id = "inline-$id-$num";
+  $script = 'InlineImage.register("'.$inline_id.'", '.to_json($inline).');';
+  return array($block, $script, $inline_id);
+}
 
 function format_inlines($text, $id) {
   $num = 0;
@@ -82,7 +81,7 @@ function format_inlines($text, $id) {
   
   // preg_match('/image #(\d+)/i', $text, $m);
   // foreach ($m as $t) {
-    // $i = new Inline('find', $m[1]);
+    // $i = Inline::find($m[1]);
     // if ($i) {
       // list($block, $script) = format_inline($i, $num, $id);
       // $list[] = $script;

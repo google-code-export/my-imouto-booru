@@ -25,7 +25,7 @@ $cond_params = array();
 
 if (!empty(Request::$params->name)) {
   $conds[] = 'name LIKE ?';
-  $cond_params[] = is_int(strpos(Request::$params->name, '*')) ? str_replace('*', '%', Request::$params->name) : Request::$params->name;
+  $cond_params[] = '%' . str_replace('*', '%', Request::$params->name) . '%';
 }
 
 if (ctype_digit(Request::$params->type)) {

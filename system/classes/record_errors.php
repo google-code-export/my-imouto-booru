@@ -47,5 +47,14 @@ class RecordErrors {
     $vars = get_object_vars($this);
     return empty($vars);
   }
+  
+  function count() {
+    $i = 0;
+    foreach ($this as $attr) {
+      foreach ($attr as $e)
+        $i++;
+    }
+    return $i;
+  }
 }
 ?>

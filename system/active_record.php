@@ -170,10 +170,14 @@ class ActiveRecord {
           }
           
           if ($validation_result !== true) {
-            if (!is_string($validation_result)) {
-              $message = isset($opts['message']) ? $opts['message'] : 'is not valid';
-            } else
-              $message = $validation_result;
+            if (isset($opts['message'])) {
+              $message = $opts['message'];
+            } else {
+              if (!is_string($validation_result)) {
+                $message = 'is not valid';
+              } else
+                $message = $validation_result;
+            }
             
             $this->record_errors->add($model_property, $message);
             
@@ -254,6 +258,9 @@ class ActiveRecord {
         return $this->changed_attributes[$attribute];
       break;
     }
+    
+    if (method_exists($this, '_call'))
+      return $this->_call($func, $args);
   }
   
   final function __get($prop) {
@@ -315,8 +322,6 @@ class ActiveRecord {
    */
   static function t() {
     return self::model_data()->table_name;
-    // return isset($this->t) ? $this->t : System::$models->{$this->cn()}->table;
-    // return isset($this->t) ? $this->t : 
   }
   
   /**
@@ -915,9 +920,9 @@ class ActiveRecord {
     $sql = array_shift($sql_params);
     $data = DB::execute_sql($sql, $sql_params);
     
-    self::check_calc_rows_param($params);
+    self::parse_calc_rows_param($params);
     
-    self::calc_rows();
+    self::retrieve_calc_rows();
     
     if (isset($params['return_array']))
       return $data;
@@ -931,7 +936,7 @@ class ActiveRecord {
     return $collection;
   }
   
-  static private function check_calc_rows_param($params) {
+  static private function parse_calc_rows_param($params) {
     if (isset($params['calc_rows']) || in_array('calc_rows', $params)) {
       if (array_key_exists('calc_rows', $params)) {
         $rows_var = $params['calc_rows'];
@@ -939,7 +944,7 @@ class ActiveRecord {
         $rows_var = 'found_rows';
       }
       
-      self::activate_calc_rows($rows_var);
+      self::set_calc_rows($rows_var);
       return true;
     }
   }
@@ -948,7 +953,7 @@ class ActiveRecord {
     try {
       $data = $this->get_current_data();
     } catch (ActiveRecordException $e) {
-      echo $e;
+      // echo $e;
       return false;
     }
     
@@ -981,14 +986,14 @@ class ActiveRecord {
     $binding_data = array();
     $calc_rows = null;
     
-    $joins = isset($params['joins']) ? ' '.$params['joins'] : null;
+    $joins  = isset($params['joins']) ? ' '.$params['joins'] : null;
     $select = isset($params['select']) ? $params['select'] : '*';
     $from   = isset($params['from']) ? $params['from'] : self::t();
     $order  = isset($params['order']) ? ' ORDER BY '.$params['order'] : null;
     $group  = isset($params['group']) ? ' GROUP BY '.$params['group'] : null;
     $having = isset($params['having'])? ' HAVING '.$params['having'] : null;
     
-    if (self::check_calc_rows_param($params))
+    if (self::parse_calc_rows_param($params))
       $calc_rows = ' SQL_CALC_FOUND_ROWS';
     
     /**
@@ -1008,6 +1013,9 @@ class ActiveRecord {
       $pagination_limit = $params['per_page'];
       $params['offset'] = $params['per_page'] * $params['page'];
       $calc_rows = ' SQL_CALC_FOUND_ROWS';
+      if (!self::set_calc_rows(1)) {
+        self::set_calc_rows('found_rows');
+      }
     }
     
     if (isset($params['conditions'])) {
@@ -1122,7 +1130,7 @@ class ActiveRecord {
   
   static protected function execute_find_sql($sql) {
     $data = call_user_func_array('DB::execute_sql', $sql);
-    self::calc_rows();
+    self::retrieve_calc_rows();
     
     return $data;
   }
@@ -1172,7 +1180,7 @@ class ActiveRecord {
    * Association functions
    */
   
-  protected function parse_has($prop, $params) {
+  private function parse_has($prop, $params) {
     $params = obj2array($params);
     
     if(empty($params['foreign_key']))
@@ -1193,12 +1201,11 @@ class ActiveRecord {
     $conds = implode(' AND ', $conds);
     array_unshift($args['find_params']['conditions'], $conds);
     
-    $args['find_params'] += $params;
+    $args['find_params'] = array_merge($args['find_params'], $params);
     return $args;
   }
   
   private function has_one_do($prop) {
-    
     $params = $this->parse_has($prop, self::model_data()->assocs->$prop->params);
     $model_name = self::model_data()->assocs->$prop->model_name;
     $params['find_params']['from'] = Application::$models->{strtolower($model_name)}->table_name;
@@ -1224,7 +1231,10 @@ class ActiveRecord {
   
   # Sets a property on the model that will let know any
   # function that makes queries that we require FOUND_ROWS().
-  static private function activate_calc_rows($var) {
+  # $var === 0 will unset the $rows_var;
+  # $var === 1 will return the $rows_var (can be used to check if it's set).
+  # otherwise, $rows_var will be set as $var.
+  static private function set_calc_rows($var) {
     static $rows_var;
     
     if ($var === 0)
@@ -1235,81 +1245,16 @@ class ActiveRecord {
       $rows_var = $var;
   }
   
-  static private function calc_rows() {
-    if (!self::activate_calc_rows(1))
+  static private function retrieve_calc_rows() {
+    if (!self::set_calc_rows(1))
       return;
     
-    global ${self::activate_calc_rows(1)};
+    global ${self::set_calc_rows(1)};
     
-    ${self::activate_calc_rows(1)} = DB::found_rows();
+    ${self::set_calc_rows(1)} = DB::found_rows();
     
     #clear calc_rows
-    self::activate_calc_rows(0);
-  }
-}
-
-class Collection extends ActiveRecord {
-  function _construct($data = null) {
-    if($data) {
-      $i = 0;
-      foreach($data as $d) {
-        $this->$i = new $this->model_name($d);
-        $i++;
-      }
-    }
-    
-    unset($this->model_name);
-    unset($this->t);
-    // unset($this->is_collection);
-  }
-  
-  // function _is_collection() {}
-  
-  /**
-   * Searches objects for a property with a value and returns object.
-   */
-  function search($prop, $value) {
-  
-    foreach ($this as &$obj) {
-      if ($obj->$prop == $value)
-        return $obj;
-    }
-    
-    return false;
-  }
-  
-  # returns an *array* with the models that matches the options.
-  # $posts->select(array('is_active' => true, 'user_id' => 4));
-  function select($opts) {
-    $objs = array();
-    
-    foreach ($this as $obj) {
-      foreach ($opts as $prop => $cond) {
-        if (!$obj->$prop || $obj->$prop != $cond)
-          continue;
-        $objs[] = $obj;
-      }
-    }
-    
-    return $objs;
-  }
-  
-  function to_xml() {
-    if (empty($this->{0}))
-      return;
-    
-    $xml = '<' . strtolower($this->{0}->t()) . '>';
-    
-    foreach ($this as $obj) {
-      if (method_exists($obj, 'to_xml'))
-        $xml .= $obj->to_xml();
-      else
-        $xml .= to_xml($obj, null, array('skip_instruct' => true));
-    }
-    
-    $xml .= '</' . strtolower($this->{0}->t()) . '>';
-    
-    return $xml;
+    self::set_calc_rows(0);
   }
 }
 ?>

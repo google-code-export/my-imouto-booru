@@ -4,6 +4,7 @@ $models = array(
   'comment',
   'favorite',
   'flagged_post_detail',
+  'forum_post',
   'note',
   'note_version',
   'pool',

@@ -4,7 +4,7 @@ required_params(array('pool_id', 'post_id'));
 $pool = Pool::find(Request::$params->pool_id);
 $post = Post::find(Request::$params->post_id);
 if (!$pool || !$post)
-  die_404();
+  return 404;
 
 if (Request::$post) {
   

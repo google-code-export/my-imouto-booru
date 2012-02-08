@@ -25,9 +25,6 @@ validates(array(
   )
 ));
 
-// m.has_many :user_blacklisted_tags, :dependent => :delete_all, :order => :id
-
-
 // #      validates_format_of :name, :with => /^(Anonymous|[Aa]dministrator)/, :on => :create, :message => "this is a disallowed username"
 // m.after_save :update_cached_name if CONFIG["enable_caching"]
 

@@ -7,12 +7,16 @@ class ActionView {
   static $content_for = array();
   static $current_content_for = array();
   
-  static $args = array();
-  static $render_args = array();
+  static $params = array();
+  // static $render_args = array();
   # Created to be able to select which file to render in cases like /post/show.php
   static $render = null;
   
   static function render($type, $value = null, $params = array()) {
+    if ($type === false) {
+      self::$params['nothing'] = true;
+      return;
+    }
     
     if (is_int(strpos($type, '#'))) {
       /**
@@ -41,6 +45,7 @@ class ActionView {
       if (is_array($value))
         $value = to_json($value);
       echo $value;
+      exit;
       
     } elseif ($type == 'xml') {
       header('Content-type: application/rss+xml; charset=UTF-8');
@@ -51,9 +56,13 @@ class ActionView {
       }
       
       echo $value;
+      exit;
+      
+    } elseif ($type == 'inline') {
+      self::$params['render_type'] = 'inline';
+      self::$params['render_value'] = $value;
+      include SYSROOT . 'action_view/render_markup_default.php';
     }
-    
-    exit;
   }
   
   static function redirect_to($url, $url_params = array(), $redirect_params = array()) {
@@ -75,6 +84,8 @@ class ActionView {
     
     if (isset($params['status']))
       self::set_http_status($params['status']);
+    if (isset($params['layout']))
+      layout($params['layout']);
   }
   
   static function set_http_status($status) {

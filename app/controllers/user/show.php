@@ -7,7 +7,7 @@ else
   $user = User::find(Request::$params->id);
 
 if (!$user)
-  die_404();
+  return 404;
 else
   set_title($user->id == User::$current->id ? "My Profile" : $user->name . "'s Profile");
 

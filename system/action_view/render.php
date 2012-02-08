@@ -1,18 +1,18 @@
 <?php
-if (isset(ActionView::$render_args['status'])) {
-  ActionView::$set_status(ActionView::$args['status']);
-  unset(ActionView::$args['status']);
+if (isset(ActionView::$params['status'])) {
+  ActionView::$set_status(ActionView::$params['status']);
+  unset(ActionView::$params['status']);
 }
 
-if (!empty(ActionView::$args['layout'])) {
-  ActionView::$layout = ActionView::$args['layout'];
-  unset(ActionView::$args['layout']);
+if (!empty(ActionView::$params['layout'])) {
+  ActionView::$layout = ActionView::$params['layout'];
+  unset(ActionView::$params['layout']);
 }
 
-if (array_key_exists('nothing', ActionView::$args) && ActionView::$args['nothing'] === true)
+if (array_key_exists('nothing', ActionView::$params) && ActionView::$params['nothing'] === true)
   exit;
 
-if (empty(ActionView::$args)) {
+if (empty(ActionView::$params)) {
   if(Request::$format == 'html' || Request::$format == 'xml')
     require ACTVIEW . 'render_markup_default.php';
 }

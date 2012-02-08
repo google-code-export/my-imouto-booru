@@ -81,11 +81,11 @@ class Request {
   }
   
   static function parse_request() {
-    self::$params = new stdClass;
+    self::$params = new RequestParams;
     
     # Get method
-    self::$method = &$_SERVER['REQUEST_METHOD'];
-    self::$remote_ip = &$_SERVER['REMOTE_ADDR'];
+    self::$method = $_SERVER['REQUEST_METHOD'];
+    self::$remote_ip = $_SERVER['REMOTE_ADDR'];
     
     if (self::$method === 'POST')
       self::$post = true;
@@ -100,11 +100,11 @@ class Request {
         exit_with_status(404);
         die('Impossible to find route. Bad htaccess config?');
       }
-        
+      
       # $_GET is filled with parameters from htaccess.
       # Parse them accordingly and fill $_GET with url parameters.
       list($_GET['controller'], $_GET['action']) = explode('@', $_GET['URLtoken']);
-      empty($_GET['controller']) && die_404();
+      empty($_GET['controller']) && exit_with_status(404);
       empty($_GET['action']) && $_GET['action'] = 'index';
       
       unset($_GET['URLtoken']);
@@ -121,7 +121,6 @@ class Request {
       # Parse GET params from $abs_url
       if (!is_bool(strpos(self::$abs_url, '?'))) {
         $get_params = urldecode(substr(self::$abs_url, strpos(self::$abs_url, '?') + 1));
-        
         $get_params = explode('&', $get_params);
         
         foreach ($get_params as $gp) {

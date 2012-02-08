@@ -20,14 +20,33 @@ function link_to($link = null, $url_params = null, $attrs = array()) {
     $url_to = $url_params;
   
   if(!empty($attrs)){
-    foreach ($attrs as $attr_name => $attr_value)
-      $attr[] = "$attr_name=\"$attr_value\"";
+    foreach ($attrs as $attr_name => $attr_value) {
+      if ($attr_name == 'method') {
+        $script = "var f = document.createElement('form'); f.style.display = 'none'; this.parentNode.appendChild(f); f.method = '".strtoupper($attr_value)."'; f.action = this.href;f.submit();return false;";
+      } elseif ($attr_name == 'confirm') {
+        $confirm = $attr_value;
+      } else
+        $attr[] = "$attr_name=\"$attr_value\"";
+    }
+    
+    if (isset($confirm)) {
+      if (!isset($script)) {
+        $attr[] = "onclick=\"if (!confirm('$confirm')) return false;\"";
+      } else
+        $attr[] = "onclick=\"if (confirm('$confirm')) \{$script\}; return false;\"";
+    } elseif (isset($script)) {
+      $attr[] = "onclick=\"$script\"";
+    }
     
     $attr = isset($attr) ? ' '.implode(' ', $attr) : null;
   } else
     $attr = null;
   
   return "<a href=\"$url_to\"$attr>$link</a>";
+}
+
+function link_to_function($text, $function) {
+  return "<a href=\"#\" onclick=\"$function; return false;\">$text</a>";
 }
 
 # Accepts special attribute: multipart.
@@ -277,8 +296,10 @@ class HTMLTags {
       $autoattrs = array('id' => $id, 'name' => $name);
       
     } else {
-      if (strpos($tag_name, '>') === 0)
-        $autoattrs['id'] = $tag_name = str_replace('>', '', $tag_name);
+      if (strpos($tag_name, '>') === 0) {
+        $tag_name = str_replace('>', '', $tag_name);
+        $autoattrs['id'] = trim(str_replace(array('[', ']'), '_', $tag_name), '_');
+      }
       
       $autoattrs['name'] = $tag_name;
     }

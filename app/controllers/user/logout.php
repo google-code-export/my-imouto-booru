@@ -1,10 +1,12 @@
 <?php
 set_title('Logout');
 
+session_regenerate_id();
+session_destroy();
+$_SESSION = array();
+session_start();
 cookie_remove('login');
 cookie_remove('pass_hash');
-$_SESSION = array();
-session_destroy();
 
 $dest = isset(Request::$params->from) ? Request::$params->from : '#home';
 

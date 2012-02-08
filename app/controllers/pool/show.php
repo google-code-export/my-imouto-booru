@@ -8,7 +8,7 @@ if (isset(Request::$params->samples) && Request::$params->samples == 0)
 $pool = Pool::find(array(Request::$params->id));
 
 if (!$pool)
-  die_404();
+  return 404;
 
 $browse_mode = User::$current->pool_browse_mode;
 

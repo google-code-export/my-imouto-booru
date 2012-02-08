@@ -263,36 +263,4 @@ function url_for($url, $opts = array()) {
   $anchor && $route .= '#'.$anchor;
   return $route.$params;
 }
-
-
-// function die_at_error($errno, $errstr, $errfile, $errline){
-  // if (!(error_reporting() & $errno)) {
-      // return;
-  // }
-  // # TODO: hardcoded system's folder name.
-  // $errfile = addslashes(preg_replace('~^(.*)\/myimouto~', '', str_replace('\\', '/', $errfile)));
-  
-  // switch ($errno) {
-      
-    // case E_USER_ERROR:
-      // $e = "Fatal: [$errno] $errstr ($errfile:$errline)";
-      // break;
-
-    // case E_USER_WARNING:
-      // $e = "Warning: [$errno] $errstr ($errfile:$errline)";
-      // break;
-
-    // case E_USER_NOTICE:
-      // $e = "Notice: [$errno] $errstr ($errfile:$errline)";
-      // break;
-
-    // default:
-      // $e = "[$errno] $errstr ($errfile:$errline)";
-      // break;
-  // }
-
-  // die($e);
-// }
-
-
 ?>

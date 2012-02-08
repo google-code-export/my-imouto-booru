@@ -169,7 +169,7 @@ $cm[Request::$controller] = " current-menu";
     <div class='menu top-item-tags<?php echo $cm['tag'] ?>'><a href="/tag" >Tags</a></div>
     <div class='menu top-item-pools<?php echo $cm['pool'] ?>'><a href="/pool" >Pools</a></div>
     <div class='menu top-item-wiki<?php echo $cm['wiki'] ?>'><a href="#" >Wiki</a></div>
-    <div id='forum-link' class='menu top-item-forum<?php echo $cm['forum'] ?>'><a href="#" >Forum</a></div>
+    <div id='forum-link' class='menu top-item-forum<?php echo $cm['forum'] ?>'><a href="/forum" >Forum</a></div>
     <div class='menu top-item-help<?php echo $cm['help'] ?>'><a href="#" >Help</a></div>
     <div class='menu top-item-more<?php echo $cm['static'] ?>'><a href="#" >More &raquo;</a></div>
   </div>
